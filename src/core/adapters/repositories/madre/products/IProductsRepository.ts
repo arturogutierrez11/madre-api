@@ -3,5 +3,10 @@ import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
 
 export interface IProductsRepository {
-  findAll(pagination: PaginationParams): Promise<PaginatedResult<ProductMadre>>;
+  findAll(
+    pagination: PaginationParams,
+    filters?: {
+      sku?: string;
+    }
+  ): Promise<PaginatedResult<ProductMadre>>;
 }
