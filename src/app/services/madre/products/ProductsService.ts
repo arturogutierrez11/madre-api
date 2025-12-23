@@ -11,7 +11,12 @@ export class ProductsService {
     private readonly productRepository: IProductsRepository
   ) {}
 
-  async listAll(pagination: PaginationParams): Promise<PaginatedResult<ProductMadre>> {
-    return this.productRepository.findAll(pagination);
+  async listAll(
+    pagination: PaginationParams,
+    filters?: {
+      sku?: string;
+    }
+  ): Promise<PaginatedResult<ProductMadre>> {
+    return this.productRepository.findAll(pagination, filters);
   }
 }

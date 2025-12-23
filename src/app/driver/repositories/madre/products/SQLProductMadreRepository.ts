@@ -56,31 +56,54 @@ export class SQLProductMadreRepository implements IProductsRepository {
     };
   }
 
-  async findAll({ limit, offset }: PaginationParams): Promise<PaginatedResult<ProductMadre>> {
+  async findAll(
+    { limit, offset }: PaginationParams,
+    filters?: { sku?: string }
+  ): Promise<PaginatedResult<ProductMadre>> {
+    const whereClause = filters?.sku ? 'WHERE sku LIKE ?' : '';
+
+    const params: any[] = [];
+    if (filters?.sku) {
+      params.push(`%${filters.sku}%`);
+    }
+    params.push(limit, offset);
+
     const rows = await this.productosMadreEntityManager.query(
       `
     SELECT *
     FROM productos_madre
+    ${whereClause}
     ORDER BY id ASC
-    
+    LIMIT ? OFFSET ?
     `,
-      [offset]
+      params
     );
 
-    const countResult = await this.productosMadreEntityManager.query(`
-    SELECT COUNT(*) AS total FROM productos_madre
-  `);
+    const countParams: any[] = [];
+    if (filters?.sku) {
+      countParams.push(`%${filters.sku}%`);
+    }
+
+    const countResult = await this.productosMadreEntityManager.query(
+      `
+    SELECT COUNT(*) AS total
+    FROM productos_madre
+    ${whereClause}
+    `,
+      countParams
+    );
 
     const total = Number(countResult[0].total);
+    const hasNext = offset + limit < total;
 
     return {
       items: rows.map(row => this.mapRowToProduct(row)),
       total,
-      limit: 1,
+      limit,
       offset,
       count: rows.length,
-      hasNext: false,
-      nextOffset: null
+      hasNext,
+      nextOffset: hasNext ? offset + limit : null
     };
   }
 }
