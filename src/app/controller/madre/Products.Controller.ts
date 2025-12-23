@@ -6,6 +6,6 @@ export class ProductsController {
 
   @Get()
   async findAll(): Promise<any> {
-    return 'this.productsService.findAll();';
+    return 'this.productsService.fhgfdsindAll();';
   }
 }
