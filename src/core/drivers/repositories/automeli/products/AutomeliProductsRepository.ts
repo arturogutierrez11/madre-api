@@ -23,12 +23,13 @@ export class AutomeliProductsRepository {
           seller_id: params.sellerId,
           app_status: params.appStatus ?? 1,
           aux: params.aux ?? 1,
-          per_page: 1000
         }
       });
 
       const data = response.data?.data ?? response.data;
-      return (data ?? []).map(mapAutomeliProduct);
+      return (data ?? [])
+        .map(mapAutomeliProduct)
+        .filter(p => p.listingTypeId === 'gold_special');
     } catch (error) {
       const status = error.response?.status || 500;
       const message = error.response?.data?.message || error.message || 'Unknown error';
