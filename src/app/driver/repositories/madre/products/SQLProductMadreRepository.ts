@@ -3,8 +3,13 @@ import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
-import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
+import {
+  AutomeliBulkUpdateData,
+  IProductsRepository
+} from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
+
+const BULK_UPDATE_BATCH_SIZE = 500;
 
 @Injectable()
 export class SQLProductMadreRepository implements IProductsRepository {
@@ -105,5 +110,64 @@ export class SQLProductMadreRepository implements IProductsRepository {
       hasNext,
       nextOffset: hasNext ? offset + limit : null
     };
+  }
+
+  /**
+   * Bulk update products from Automeli sync data
+   * Uses INSERT ... ON DUPLICATE KEY UPDATE for efficiency
+   */
+  async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    let totalAffected = 0;
+
+    // Process in batches to avoid MySQL max_allowed_packet issues
+    for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
+      const affected = await this.executeBulkUpdate(batch);
+      totalAffected += affected;
+    }
+
+    return totalAffected;
+  }
+
+  private async executeBulkUpdate(products: AutomeliBulkUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    // Build VALUES clause with placeholders
+    const valuePlaceholders = products.map(() => '(?, ?, ?, ?, ?)').join(', ');
+
+    // Flatten parameters
+    const params: (string | number | null)[] = [];
+    for (const product of products) {
+      params.push(
+        product.sku,
+        product.price,
+        product.stock,
+        product.status,
+        product.shippingTime
+      );
+    }
+
+    const sql = `
+      INSERT INTO productos_madre (sku, precio, stock, estado, tiempo_envio)
+      VALUES ${valuePlaceholders}
+      ON DUPLICATE KEY UPDATE
+        precio = VALUES(precio),
+        stock = VALUES(stock),
+        estado = VALUES(estado),
+        tiempo_envio = VALUES(tiempo_envio),
+        updated_at = NOW()
+    `;
+
+    const result = await this.productosMadreEntityManager.query(sql, params);
+
+    // MySQL returns affectedRows which includes both inserts and updates
+    // For ON DUPLICATE KEY UPDATE, each updated row counts as 2 affected rows
+    return result.affectedRows || 0;
   }
 }

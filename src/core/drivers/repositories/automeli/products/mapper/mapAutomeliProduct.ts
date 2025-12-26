@@ -1,6 +1,6 @@
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 
-function mapAutomeliProduct(item: any): AutomeliProduct {
+export function mapAutomeliProduct(item: any): AutomeliProduct {
   return {
     sku: item.sku,
     idMeli: item.id_meli,
