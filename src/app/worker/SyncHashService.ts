@@ -1,7 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createHash } from 'crypto';
+import Redis from 'ioredis';
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 
 const REDIS_HASH_KEY = 'automeli_products_state';
@@ -15,15 +14,43 @@ export interface ProductHashData {
 }
 
 @Injectable()
-export class SyncHashService {
-  constructor(@Inject(CACHE_MANAGER) private readonly cacheManager: Cache) {}
+export class SyncHashService implements OnModuleDestroy {
+  private readonly redis: Redis;
 
-  /**
-   * Get the underlying Redis client from cache-manager
-   */
-  private getRedisClient(): any {
-    const store = (this.cacheManager as any).store;
-    return store?.client || store?.getClient?.();
+  constructor() {
+    const host = process.env.REDIS_HOST;
+    const port = Number(process.env.REDIS_PORT);
+    const username = process.env.REDIS_USERNAME;
+    const password = process.env.REDIS_PASSWORD;
+
+    if (!host || !port) {
+      throw new Error(
+        '[SyncHashService] Missing REDIS_HOST/REDIS_PORT. Cannot initialize Redis client.'
+      );
+    }
+
+    // DigitalOcean Managed Redis requires TLS
+    this.redis = new Redis({
+      host,
+      port,
+      username,
+      password,
+      tls: {},
+      maxRetriesPerRequest: 3
+    });
+
+    this.redis.on('error', err => {
+      console.error('[SyncHashService] Redis error:', err?.message ?? err);
+    });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    try {
+      await this.redis.quit();
+    } catch {
+      // Best-effort shutdown
+      this.redis.disconnect();
+    }
   }
 
   /**
@@ -45,12 +72,11 @@ export class SyncHashService {
    * Get multiple hashes from Redis using HMGET
    */
   async getHashes(skus: string[]): Promise<Map<string, string | null>> {
-    const client = this.getRedisClient();
-    if (!client || skus.length === 0) {
+    if (skus.length === 0) {
       return new Map();
     }
 
-    const values = await client.hmget(REDIS_HASH_KEY, ...skus);
+    const values = await this.redis.hmget(REDIS_HASH_KEY, ...skus);
     const result = new Map<string, string | null>();
 
     skus.forEach((sku, index) => {
@@ -64,8 +90,7 @@ export class SyncHashService {
    * Set multiple hashes in Redis using HMSET
    */
   async setHashes(hashMap: Map<string, string>): Promise<void> {
-    const client = this.getRedisClient();
-    if (!client || hashMap.size === 0) {
+    if (hashMap.size === 0) {
       return;
     }
 
@@ -74,7 +99,8 @@ export class SyncHashService {
       entries.push(sku, hash);
     });
 
-    await client.hmset(REDIS_HASH_KEY, ...entries);
+    // ioredis supports variadic HSET: (key, field1, value1, field2, value2, ...)
+    await this.redis.hset(REDIS_HASH_KEY, ...entries);
   }
 
   /**
@@ -123,14 +149,14 @@ export class SyncHashService {
    * Try to acquire the sync lock
    */
   async acquireLock(): Promise<boolean> {
-    const client = this.getRedisClient();
-    if (!client) {
-      console.warn('Redis client not available, proceeding without lock');
-      return true;
-    }
-
     // SET key value NX EX ttl - only set if not exists
-    const result = await client.set(SYNC_LOCK_KEY, Date.now().toString(), 'EX', LOCK_TTL_SECONDS, 'NX');
+    const result = await this.redis.set(
+      SYNC_LOCK_KEY,
+      Date.now().toString(),
+      'EX',
+      LOCK_TTL_SECONDS,
+      'NX'
+    );
     return result === 'OK';
   }
 
@@ -138,12 +164,7 @@ export class SyncHashService {
    * Release the sync lock
    */
   async releaseLock(): Promise<void> {
-    const client = this.getRedisClient();
-    if (!client) {
-      return;
-    }
-
-    await client.del(SYNC_LOCK_KEY);
+    await this.redis.del(SYNC_LOCK_KEY);
   }
 }
 

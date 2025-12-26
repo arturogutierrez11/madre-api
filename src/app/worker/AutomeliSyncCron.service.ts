@@ -13,6 +13,8 @@ interface SyncStats {
   totalFetched: number;
   totalChanged: number;
   totalUpdated: number;
+  totalHashesUpdated: number;
+  totalSkipped: number;
   batches: number;
   startTime: Date;
   endTime?: Date;
@@ -54,6 +56,8 @@ export class AutomeliSyncCronService {
       totalFetched: 0,
       totalChanged: 0,
       totalUpdated: 0,
+      totalHashesUpdated: 0,
+      totalSkipped: 0,
       batches: 0,
       startTime: new Date()
     };
@@ -74,7 +78,7 @@ export class AutomeliSyncCronService {
       while (hasMorePages) {
         console.log(`[AutomeliSync] Processing batch starting at page ${basePage}`);
 
-        // Fetch 20 pages in parallel
+        // Fetch 10 pages in parallel
         const batchResult = await this.fetchBatch(basePage);
         stats.totalFetched += batchResult.products.length;
         stats.batches++;
@@ -91,8 +95,9 @@ export class AutomeliSyncCronService {
         // Filter to only changed products using hash comparison
         const changedProducts = await this.syncHashService.filterChangedProducts(batchResult.products);
         stats.totalChanged += changedProducts.length;
+        stats.totalSkipped += batchResult.products.length - changedProducts.length;
 
-        console.log(`[AutomeliSync] Found ${changedProducts.length} changed products`);
+        console.log(`[AutomeliSync] Found ${changedProducts.length} changed products (${batchResult.products.length - changedProducts.length} unchanged)`);
 
         if (changedProducts.length > 0) {
           // Bulk update database
@@ -101,8 +106,9 @@ export class AutomeliSyncCronService {
 
           // Update hashes in Redis for successfully updated products
           await this.syncHashService.updateHashes(changedProducts);
+          stats.totalHashesUpdated += changedProducts.length;
 
-          console.log(`[AutomeliSync] Updated ${updatedCount} products in database`);
+          console.log(`[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`);
         }
 
         // Move to next batch
@@ -113,12 +119,10 @@ export class AutomeliSyncCronService {
       }
 
       stats.endTime = new Date();
-      const duration = (stats.endTime.getTime() - stats.startTime.getTime()) / 1000;
+      const durationMs = stats.endTime.getTime() - stats.startTime.getTime();
+      const durationFormatted = this.formatDuration(durationMs);
 
-      console.log('[AutomeliSync] Sync completed:', {
-        ...stats,
-        durationSeconds: duration
-      });
+      this.logSummary(stats, durationFormatted);
 
       return stats;
     } catch (error) {
@@ -130,7 +134,7 @@ export class AutomeliSyncCronService {
   }
 
   /**
-   * Fetch 20 pages in parallel
+   * Fetch 10 pages in parallel
    */
   private async fetchBatch(basePage: number): Promise<BatchResult> {
     const pagePromises: Promise<PaginatedAutomeliResponse>[] = [];
@@ -142,10 +146,14 @@ export class AutomeliSyncCronService {
 
     const results = await Promise.all(pagePromises);
 
-    // Check if any page indicates there are more pages
-    // The last page in the batch determines if we should continue
-    const lastResult = results[results.length - 1];
-    const hasMorePages = lastResult.pagination.hasNext;
+    // Find the last successful result (has products) to determine hasNext
+    // This prevents failed pages from stopping the loop prematurely
+    const successfulResults = results.filter(r => r.products.length > 0);
+    const lastSuccessfulResult = successfulResults.length > 0
+      ? successfulResults[successfulResults.length - 1]
+      : results[results.length - 1];
+
+    const hasMorePages = lastSuccessfulResult.pagination.hasNext;
 
     // Flatten all products into single array
     const products = results.flatMap((result) => result.products);
@@ -205,5 +213,53 @@ export class AutomeliSyncCronService {
     if (!value) return null;
     const match = value.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : null;
+  }
+
+  /**
+   * Format duration in human-readable format
+   */
+  private formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
+  }
+
+  /**
+   * Log a formatted summary of the sync operation
+   */
+  private logSummary(stats: SyncStats, duration: string): void {
+    const separator = '═'.repeat(50);
+    const changeRate = stats.totalFetched > 0
+      ? ((stats.totalChanged / stats.totalFetched) * 100).toFixed(2)
+      : '0.00';
+
+    console.log(`
+${separator}
+  AUTOMELI SYNC COMPLETED
+${separator}
+
+  Duration:              ${duration}
+  Batches processed:     ${stats.batches}
+
+  ─── PRODUCTS ───────────────────────────────────
+  Total fetched:         ${stats.totalFetched.toLocaleString()}
+  Changed (need update): ${stats.totalChanged.toLocaleString()} (${changeRate}%)
+  Skipped (unchanged):   ${stats.totalSkipped.toLocaleString()}
+
+  ─── DATABASE ───────────────────────────────────
+  Products updated:      ${stats.totalUpdated.toLocaleString()}
+
+  ─── REDIS CACHE ────────────────────────────────
+  Hashes updated:        ${stats.totalHashesUpdated.toLocaleString()}
+
+${separator}
+`);
   }
 }

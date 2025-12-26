@@ -52,7 +52,13 @@ export class AutomeliProductsRepository {
         }
       };
     } catch (error) {
-      throw new HttpException('Error obteniendo productos desde Automeli', error.response?.status || 500);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message || 'Unknown error';
+      console.error(`[AutomeliRepo] API Error: ${status} - ${message}`, {
+        url: `${this.baseUrl}/get-loaded-products/`,
+        params: { seller_id: params.sellerId, page: params.page }
+      });
+      throw new HttpException(`Error obteniendo productos desde Automeli: ${message}`, status);
     }
   }
 }

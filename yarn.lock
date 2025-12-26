@@ -3717,7 +3717,7 @@ inspect-with-kind@^1.0.5:
   dependencies:
     kind-of "^6.0.2"
 
-ioredis@^5.0.4, ioredis@^5.4.1:
+ioredis@^5.0.4, ioredis@^5.4.1, ioredis@^5.8.2:
   version "5.8.2"
   resolved "https://registry.npmjs.org/ioredis/-/ioredis-5.8.2.tgz"
   integrity sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==

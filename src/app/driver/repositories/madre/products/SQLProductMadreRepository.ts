@@ -113,8 +113,8 @@ export class SQLProductMadreRepository implements IProductsRepository {
   }
 
   /**
-   * Bulk update products from Automeli sync data
-   * Uses INSERT ... ON DUPLICATE KEY UPDATE for efficiency
+   * Bulk update existing products from Automeli sync data
+   * Only updates records that already exist in the database
    */
   async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
     if (products.length === 0) {
@@ -133,41 +133,50 @@ export class SQLProductMadreRepository implements IProductsRepository {
     return totalAffected;
   }
 
+  /**
+   * Escape single quotes in SKU for SQL safety
+   */
+  private escapeSku(sku: string): string {
+    return sku.replace(/'/g, "''");
+  }
+
   private async executeBulkUpdate(products: AutomeliBulkUpdateData[]): Promise<number> {
     if (products.length === 0) {
       return 0;
     }
 
-    // Build VALUES clause with placeholders
-    const valuePlaceholders = products.map(() => '(?, ?, ?, ?, ?)').join(', ');
+    // Build SKU list for WHERE IN clause
+    const skus = products.map(p => `'${this.escapeSku(p.sku)}'`).join(',');
 
-    // Flatten parameters
-    const params: (string | number | null)[] = [];
-    for (const product of products) {
-      params.push(
-        product.sku,
-        product.price,
-        product.stock,
-        product.status,
-        product.shippingTime
-      );
-    }
+    // Build CASE statements for each field
+    const precioCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`)
+      .join(' ');
+
+    const stockCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`)
+      .join(' ');
+
+    const estadoCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`)
+      .join(' ');
+
+    const tiempoEnvioCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
+      .join(' ');
 
     const sql = `
-      INSERT INTO productos_madre (sku, precio, stock, estado, tiempo_envio)
-      VALUES ${valuePlaceholders}
-      ON DUPLICATE KEY UPDATE
-        precio = VALUES(precio),
-        stock = VALUES(stock),
-        estado = VALUES(estado),
-        tiempo_envio = VALUES(tiempo_envio),
+      UPDATE productos_madre
+      SET
+        precio = CASE sku ${precioCases} ELSE precio END,
+        stock = CASE sku ${stockCases} ELSE stock END,
+        estado = CASE sku ${estadoCases} ELSE estado END,
+        tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
         updated_at = NOW()
+      WHERE sku IN (${skus})
     `;
 
-    const result = await this.productosMadreEntityManager.query(sql, params);
-
-    // MySQL returns affectedRows which includes both inserts and updates
-    // For ON DUPLICATE KEY UPDATE, each updated row counts as 2 affected rows
+    const result = await this.productosMadreEntityManager.query(sql);
     return result.affectedRows || 0;
   }
 }
