@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { WorkerModule } from './app/worker/worker.module';
+import { AutomeliSyncWorkerModule } from './app/worker/automeli-sync/AutomeliSyncWorker.module';
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(WorkerModule);
+  const app = await NestFactory.createApplicationContext(AutomeliSyncWorkerModule);
 
   console.log('Worker started - Automeli Sync Cron active');
 
@@ -21,4 +21,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

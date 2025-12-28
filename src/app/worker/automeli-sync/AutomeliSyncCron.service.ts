@@ -1,10 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { AutomeliProductsRepository } from 'src/core/drivers/repositories/automeli/products/AutomeliProductsRepository';
+import { IAutomeliProductsRepository } from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
 import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
-import { SyncHashService, ProductHashData } from './SyncHashService';
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
+import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
+import { AutomeliProductsStateService, ProductHashData } from './AutomeliProductsState.service';
+import { ProductStateHasher } from './ProductStateHasher';
 
 const PAGES_PER_BATCH = 20;
 const PRODUCTS_PER_PAGE = 1000;
@@ -32,10 +34,14 @@ export class AutomeliSyncCronService {
   private readonly sellerId: string;
 
   constructor(
-    private readonly automeliRepository: AutomeliProductsRepository,
+    @Inject('IAutomeliProductsRepository')
+    private readonly automeliRepository: IAutomeliProductsRepository,
     @Inject('IProductsRepository')
     private readonly productRepository: IProductsRepository,
-    private readonly syncHashService: SyncHashService,
+    @Inject('ISyncLock')
+    private readonly syncLock: ISyncLock,
+    private readonly productsStateService: AutomeliProductsStateService,
+    private readonly hasher: ProductStateHasher,
     private readonly configService: ConfigService
   ) {
     this.sellerId = this.configService.get<string>('AUTOMELI_SELLER_ID', '');
@@ -65,7 +71,7 @@ export class AutomeliSyncCronService {
     };
 
     // Check if another sync is running
-    const lockAcquired = await this.syncHashService.acquireLock();
+    const lockAcquired = await this.syncLock.acquire();
     if (!lockAcquired) {
       console.log('[AutomeliSync] Another sync is already running. Skipping this run.');
       return stats;
@@ -93,7 +99,7 @@ export class AutomeliSyncCronService {
         }
 
         // Filter to only changed products using hash comparison
-        const changedProducts = await this.syncHashService.filterChangedProducts(products);
+        const changedProducts = await this.productsStateService.filterChangedProducts(products);
         stats.totalChanged += changedProducts.length;
         stats.totalSkipped += products.length - changedProducts.length;
 
@@ -107,7 +113,7 @@ export class AutomeliSyncCronService {
           stats.totalUpdated += updatedCount;
 
           // Update hashes in Redis for successfully updated products
-          await this.syncHashService.updateHashes(changedProducts);
+          await this.productsStateService.updateHashes(changedProducts);
           stats.totalHashesUpdated += changedProducts.length;
 
           console.log(`[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`);
@@ -131,7 +137,7 @@ export class AutomeliSyncCronService {
       console.error('[AutomeliSync] Sync failed:', error);
       throw error;
     } finally {
-      await this.syncHashService.releaseLock();
+      await this.syncLock.release();
     }
   }
 
@@ -201,7 +207,7 @@ export class AutomeliSyncCronService {
       price: product.meliSalePrice,
       stock: product.stockQuantity,
       status: this.mapStatus(product.meliStatus),
-      shippingTime: this.parseManufacturingTime(product.manufacturingTime)
+      shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime)
     }));
 
     return await (this.productRepository as any).bulkUpdateFromAutomeli(updateData);
@@ -212,17 +218,6 @@ export class AutomeliSyncCronService {
    */
   private mapStatus(meliStatus: string): 'active' | 'inactive' {
     return meliStatus === 'active' ? 'active' : 'inactive';
-  }
-
-  /**
-   * Parse manufacturing time string to extract numeric days
-   * "10 dias" -> 10
-   * "5 días hábiles" -> 5
-   */
-  private parseManufacturingTime(value: string | null): number | null {
-    if (!value) return null;
-    const match = value.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : null;
   }
 
   /**

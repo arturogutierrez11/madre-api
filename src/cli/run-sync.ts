@@ -1,9 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { WorkerModule } from '../app/worker/worker.module';
-import { AutomeliSyncCronService } from '../app/worker/AutomeliSyncCron.service';
+import { AutomeliSyncWorkerModule } from '../app/worker/automeli-sync/AutomeliSyncWorker.module';
+import { AutomeliSyncCronService } from '../app/worker/automeli-sync/AutomeliSyncCron.service';
 
 async function runOnce() {
-  const app = await NestFactory.createApplicationContext(WorkerModule);
+  const app = await NestFactory.createApplicationContext(AutomeliSyncWorkerModule);
 
   const syncService = app.get(AutomeliSyncCronService);
 
