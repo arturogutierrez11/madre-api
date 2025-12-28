@@ -56,9 +56,6 @@ export class AutomeliSyncCronService {
     await this.runSync();
   }
 
-  /**
-   * Main sync orchestration method
-   */
   async runSync(): Promise<SyncStats> {
     const stats: SyncStats = {
       totalFetched: 0,
@@ -121,9 +118,6 @@ export class AutomeliSyncCronService {
 
         // Move to next batch
         basePage += PAGES_PER_BATCH;
-
-        // Memory cleanup hint (Node.js will handle GC)
-        // The batch arrays go out of scope here
       }
 
       stats.endTime = new Date();
@@ -141,12 +135,6 @@ export class AutomeliSyncCronService {
     }
   }
 
-  /**
-   * Fetch 20 pages in parallel (aux paging).
-   *
-   * Stop condition: end is reached only when ALL pages succeed AND return empty arrays.
-   * If any page fails (after retries), we keep going (do not treat as end-of-data).
-   */
   private async fetchBatch(basePage: number): Promise<{ products: AutomeliProduct[]; endReached: boolean }> {
     const pagePromises: Promise<PageFetchResult>[] = [];
 
@@ -163,9 +151,6 @@ export class AutomeliSyncCronService {
     return { products, endReached };
   }
 
-  /**
-   * Fetch a single page from Automeli API
-   */
   private async fetchPage(page: number): Promise<PageFetchResult> {
     for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
       try {
@@ -198,9 +183,6 @@ export class AutomeliSyncCronService {
     await new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  /**
-   * Bulk update products in the database
-   */
   private async bulkUpdate(products: ProductHashData[]): Promise<number> {
     const updateData = products.map(({ product }) => ({
       sku: product.sku,
@@ -213,16 +195,10 @@ export class AutomeliSyncCronService {
     return await (this.productRepository as any).bulkUpdateFromAutomeli(updateData);
   }
 
-  /**
-   * Map Automeli status to ProductMadre status
-   */
   private mapStatus(meliStatus: string): 'active' | 'inactive' {
     return meliStatus === 'active' ? 'active' : 'inactive';
   }
 
-  /**
-   * Format duration in human-readable format
-   */
   private formatDuration(ms: number): string {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -236,9 +212,6 @@ export class AutomeliSyncCronService {
     return `${seconds}s`;
   }
 
-  /**
-   * Log a formatted summary of the sync operation
-   */
   private logSummary(stats: SyncStats, duration: string): void {
     const separator = '═'.repeat(50);
     const changeRate = stats.totalFetched > 0

@@ -112,10 +112,6 @@ export class SQLProductMadreRepository implements IProductsRepository {
     };
   }
 
-  /**
-   * Bulk update existing products from Automeli sync data
-   * Only updates records that already exist in the database
-   */
   async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
     if (products.length === 0) {
       return 0;
@@ -123,7 +119,6 @@ export class SQLProductMadreRepository implements IProductsRepository {
 
     let totalAffected = 0;
 
-    // Process in batches to avoid MySQL max_allowed_packet issues
     for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
       const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
       const affected = await this.executeBulkUpdate(batch);
@@ -133,9 +128,6 @@ export class SQLProductMadreRepository implements IProductsRepository {
     return totalAffected;
   }
 
-  /**
-   * Escape single quotes in SKU for SQL safety
-   */
   private escapeSku(sku: string): string {
     return sku.replace(/'/g, "''");
   }

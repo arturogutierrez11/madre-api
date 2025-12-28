@@ -27,12 +27,10 @@ import { AutomeliProductsStateService } from './AutomeliProductsState.service';
     })
   ],
   providers: [
-    // Orchestration
     AutomeliSyncCronService,
     AutomeliProductsStateService,
     ProductStateHasher,
 
-    // Ports -> implementations
     {
       provide: 'IProductsRepository',
       useClass: SQLProductMadreRepository
@@ -50,7 +48,6 @@ import { AutomeliProductsStateService } from './AutomeliProductsState.service';
       useClass: RedisSyncLock
     },
 
-    // Shared Redis client for cache + lock
     {
       provide: 'REDIS_CLIENT',
       useFactory: () => {
@@ -68,7 +65,7 @@ import { AutomeliProductsStateService } from './AutomeliProductsState.service';
           port,
           username,
           password,
-          tls: {}, // DigitalOcean Managed Redis requires TLS
+          tls: {},
           maxRetriesPerRequest: 3
         });
       }

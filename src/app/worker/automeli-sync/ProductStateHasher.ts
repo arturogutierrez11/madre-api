@@ -16,11 +16,6 @@ export class ProductStateHasher {
     return createHash('md5').update(hashString).digest('hex');
   }
 
-  /**
-   * Parse manufacturing time string to extract numeric days
-   * "10 dias" -> 10
-   * "5 días hábiles" -> 5
-   */
   parseManufacturingTime(value: string | null): number | null {
     if (!value) return null;
     const match = value.match(/(\d+)/);
