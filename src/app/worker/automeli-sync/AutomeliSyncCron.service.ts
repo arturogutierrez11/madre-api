@@ -44,7 +44,7 @@ export class AutomeliSyncCronService {
     private readonly hasher: ProductStateHasher,
     private readonly configService: ConfigService
   ) {
-    this.sellerId = this.configService.get<string>('AUTOMELI_SELLER_ID', '');
+    this.sellerId = this.configService.get<string>('AUTOMELI_SELLER_ID', '1757836744');
   }
 
   /**
