@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
+import { mapAutomeliProduct } from './mapper/mapAutomeliProduct';
 
 @Injectable()
 export class AutomeliProductsRepository {
@@ -11,29 +12,32 @@ export class AutomeliProductsRepository {
     this.baseUrl = this.configService.get<string>('AUTOMELI_BASE_URL', '');
   }
 
-  async getLoadedProducts(params: { sellerId: string; appStatus?: number; aux?: number }): Promise<AutomeliProduct[]> {
+  async getLoadedProducts(params: {
+    sellerId: string;
+    appStatus?: number;
+    aux?: number;
+  }): Promise<AutomeliProduct[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/get-loaded-products/`, {
         params: {
           seller_id: params.sellerId,
           app_status: params.appStatus ?? 1,
-          aux: params.aux ?? 1
+          aux: params.aux ?? 1,
         }
       });
 
-      return response.data.map((item: any) => ({
-        sku: item.sku ?? null,
-        sellerSku: item.seller_sku ?? null,
-        title: item.title ?? null,
-        price: item.price !== undefined ? Number(item.price) : null,
-        stock: item.stock !== undefined ? Number(item.stock) : null,
-        appStatus: item.app_status ?? null,
-        aux: item.aux ?? null,
-        sellerId: item.seller_id ?? params.sellerId,
-        raw: item
-      }));
+      const data = response.data?.data ?? response.data;
+      return (data ?? [])
+        .map(mapAutomeliProduct)
+        .filter(p => p.listingTypeId === 'gold_special');
     } catch (error) {
-      throw new HttpException('Error obteniendo productos desde Automeli', error.response?.status || 500);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message || 'Unknown error';
+      console.error(`[AutomeliRepo] API Error: ${status} - ${message}`, {
+        url: `${this.baseUrl}/get-loaded-products/`,
+        params: { seller_id: params.sellerId, aux: params.aux }
+      });
+      throw new HttpException(`Error obteniendo productos desde Automeli: ${message}`, status);
     }
   }
 }

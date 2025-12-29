@@ -3,8 +3,13 @@ import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
-import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
+import {
+  AutomeliBulkUpdateData,
+  IProductsRepository
+} from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
+
+const BULK_UPDATE_BATCH_SIZE = 500;
 
 @Injectable()
 export class SQLProductMadreRepository implements IProductsRepository {
@@ -105,5 +110,65 @@ export class SQLProductMadreRepository implements IProductsRepository {
       hasNext,
       nextOffset: hasNext ? offset + limit : null
     };
+  }
+
+  async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    let totalAffected = 0;
+
+    for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
+      const affected = await this.executeBulkUpdate(batch);
+      totalAffected += affected;
+    }
+
+    return totalAffected;
+  }
+
+  private escapeSku(sku: string): string {
+    return sku.replace(/'/g, "''");
+  }
+
+  private async executeBulkUpdate(products: AutomeliBulkUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    // Build SKU list for WHERE IN clause
+    const skus = products.map(p => `'${this.escapeSku(p.sku)}'`).join(',');
+
+    // Build CASE statements for each field
+    const precioCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`)
+      .join(' ');
+
+    const stockCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`)
+      .join(' ');
+
+    const estadoCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`)
+      .join(' ');
+
+    const tiempoEnvioCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
+      .join(' ');
+
+    const sql = `
+      UPDATE productos_madre
+      SET
+        precio = CASE sku ${precioCases} ELSE precio END,
+        stock = CASE sku ${stockCases} ELSE stock END,
+        estado = CASE sku ${estadoCases} ELSE estado END,
+        tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
+        updated_at = NOW()
+      WHERE sku IN (${skus})
+    `;
+
+    const result = await this.productosMadreEntityManager.query(sql);
+    return result.affectedRows || 0;
   }
 }
