@@ -9,7 +9,7 @@ import { AutomeliProductsStateService, ProductHashData } from './AutomeliProduct
 import { ProductStateHasher } from './ProductStateHasher';
 
 const PAGES_PER_BATCH = 20;
-const PRODUCTS_PER_PAGE = 1000;
+// const PRODUCTS_PER_PAGE = 1000;
 const FETCH_RETRIES = 3;
 const FETCH_RETRY_BASE_DELAY_MS = 500;
 
@@ -192,7 +192,7 @@ export class AutomeliSyncCronService {
       shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime)
     }));
 
-    return await (this.productRepository as any).bulkUpdateFromAutomeli(updateData);
+    return await (this.productRepository).bulkUpdateFromAutomeli(updateData);
   }
 
   private mapStatus(meliStatus: string): 'active' | 'inactive' {
