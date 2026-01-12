@@ -1,11 +1,12 @@
-import { Injectable, HttpException } from '@nestjs/common';
-import axios from 'axios';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import { IAutomeliProductsRepository } from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 import { mapAutomeliProduct } from './mapper/mapAutomeliProduct';
 
 @Injectable()
-export class AutomeliProductsRepository {
+export class AutomeliProductsRepository implements IAutomeliProductsRepository {
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
