@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AutomeliSyncWorkerModule } from './app/worker/automeli-sync/AutomeliSyncWorker.module';
+import { AutomeliSyncWorkerModule } from './app/module/madre/sync/AutomeliSyncWorker.module';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AutomeliSyncWorkerModule);

@@ -22,5 +22,3 @@ export class ProductStateHasher {
     return match ? parseInt(match[1], 10) : null;
   }
 }
-
-

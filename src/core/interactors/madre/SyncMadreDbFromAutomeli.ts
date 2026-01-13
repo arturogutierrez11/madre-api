@@ -1,15 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { ConfigService } from '@nestjs/config';
 import { IAutomeliProductsRepository } from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
 import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
-import { AutomeliProductsStateService, ProductHashData } from './AutomeliProductsState.service';
+import { AutomeliProductsState, ProductHashData } from './AutomeliProductsState';
 import { ProductStateHasher } from './ProductStateHasher';
+import { Inject, Injectable } from '@nestjs/common';
 
 const PAGES_PER_BATCH = 20;
-// const PRODUCTS_PER_PAGE = 1000;
 const FETCH_RETRIES = 3;
 const FETCH_RETRY_BASE_DELAY_MS = 500;
 
@@ -30,31 +27,23 @@ interface PageFetchResult {
 }
 
 @Injectable()
-export class AutomeliSyncCronService {
-  private readonly sellerId: string;
-
+export class SyncMadreDbFromAutomeli {
   constructor(
     @Inject('IAutomeliProductsRepository')
     private readonly automeliRepository: IAutomeliProductsRepository,
+
     @Inject('IProductsRepository')
     private readonly productRepository: IProductsRepository,
+
     @Inject('ISyncLock')
     private readonly syncLock: ISyncLock,
-    private readonly productsStateService: AutomeliProductsStateService,
-    private readonly hasher: ProductStateHasher,
-    private readonly configService: ConfigService
-  ) {
-    this.sellerId = this.configService.get<string>('AUTOMELI_SELLER_ID', '1757836744');
-  }
 
-  /**
-   * Run every 6 hours at 00:00, 06:00, 12:00, 18:00 (Buenos Aires time)
-   */
-  @Cron('0 0 0,6,12,18 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
-  async handleCron() {
-    console.log('[AutomeliSync] Cron triggered at', new Date().toISOString());
-    await this.runSync();
-  }
+    private readonly productsStateService: AutomeliProductsState,
+    private readonly hasher: ProductStateHasher,
+
+    @Inject('AUTOMELI_SELLER_ID')
+    private readonly sellerId: string
+  ) {}
 
   async runSync(): Promise<SyncStats> {
     const stats: SyncStats = {
@@ -67,7 +56,6 @@ export class AutomeliSyncCronService {
       startTime: new Date()
     };
 
-    // Check if another sync is running
     const lockAcquired = await this.syncLock.acquire();
     if (!lockAcquired) {
       console.log('[AutomeliSync] Another sync is already running. Skipping this run.');
@@ -82,20 +70,17 @@ export class AutomeliSyncCronService {
       while (true) {
         console.log(`[AutomeliSync] Processing batch starting at page ${basePage}`);
 
-        // Fetch 20 pages in parallel (aux paging)
         const { products, endReached } = await this.fetchBatch(basePage);
         stats.totalFetched += products.length;
         stats.batches++;
 
         console.log(`[AutomeliSync] Fetched ${products.length} products in batch ${stats.batches}`);
 
-        // Stop when the whole batch is empty (and no failures)
         if (endReached) {
           console.log('[AutomeliSync] End reached (all pages empty in batch)');
           break;
         }
 
-        // Filter to only changed products using hash comparison
         const changedProducts = await this.productsStateService.filterChangedProducts(products);
         stats.totalChanged += changedProducts.length;
         stats.totalSkipped += products.length - changedProducts.length;
@@ -105,26 +90,23 @@ export class AutomeliSyncCronService {
         );
 
         if (changedProducts.length > 0) {
-          // Bulk update database
           const updatedCount = await this.bulkUpdate(changedProducts);
           stats.totalUpdated += updatedCount;
 
-          // Update hashes in Redis for successfully updated products
           await this.productsStateService.updateHashes(changedProducts);
           stats.totalHashesUpdated += changedProducts.length;
 
-          console.log(`[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`);
+          console.log(
+            `[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`
+          );
         }
 
-        // Move to next batch
         basePage += PAGES_PER_BATCH;
       }
 
       stats.endTime = new Date();
       const durationMs = stats.endTime.getTime() - stats.startTime.getTime();
-      const durationFormatted = this.formatDuration(durationMs);
-
-      this.logSummary(stats, durationFormatted);
+      this.logSummary(stats, this.formatDuration(durationMs));
 
       return stats;
     } catch (error) {
@@ -163,10 +145,7 @@ export class AutomeliSyncCronService {
         return { ok: true, products };
       } catch (error) {
         const message = error?.message ?? error;
-        console.error(
-          `[AutomeliSync] Failed to fetch page ${page} (attempt ${attempt}/${FETCH_RETRIES}):`,
-          message
-        );
+        console.error(`[AutomeliSync] Failed to fetch page ${page} (attempt ${attempt}/${FETCH_RETRIES}):`, message);
 
         if (attempt < FETCH_RETRIES) {
           const delayMs = FETCH_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
@@ -192,7 +171,7 @@ export class AutomeliSyncCronService {
       shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime)
     }));
 
-    return await (this.productRepository).bulkUpdateFromAutomeli(updateData);
+    return await this.productRepository.bulkUpdateFromAutomeli(updateData);
   }
 
   private mapStatus(meliStatus: string): 'active' | 'inactive' {
@@ -214,9 +193,7 @@ export class AutomeliSyncCronService {
 
   private logSummary(stats: SyncStats, duration: string): void {
     const separator = '═'.repeat(50);
-    const changeRate = stats.totalFetched > 0
-      ? ((stats.totalChanged / stats.totalFetched) * 100).toFixed(2)
-      : '0.00';
+    const changeRate = stats.totalFetched > 0 ? ((stats.totalChanged / stats.totalFetched) * 100).toFixed(2) : '0.00';
 
     console.log(`
 ${separator}

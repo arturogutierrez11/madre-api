@@ -137,36 +137,40 @@ export class SQLProductMadreRepository implements IProductsRepository {
       return 0;
     }
 
-    // Build SKU list for WHERE IN clause
     const skus = products.map(p => `'${this.escapeSku(p.sku)}'`).join(',');
 
-    // Build CASE statements for each field
-    const precioCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`)
-      .join(' ');
+    const precioCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`).join(' ');
 
-    const stockCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`)
-      .join(' ');
+    const stockCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`).join(' ');
 
-    const estadoCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`)
-      .join(' ');
+    const estadoCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`).join(' ');
 
     const tiempoEnvioCases = products
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
       .join(' ');
 
     const sql = `
-      UPDATE productos_madre
-      SET
-        precio = CASE sku ${precioCases} ELSE precio END,
-        stock = CASE sku ${stockCases} ELSE stock END,
-        estado = CASE sku ${estadoCases} ELSE estado END,
-        tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
-        updated_at = NOW()
-      WHERE sku IN (${skus})
-    `;
+    UPDATE productos_madre
+    SET
+      precio = CASE sku ${precioCases} ELSE precio END,
+      stock = CASE sku ${stockCases} ELSE stock END,
+      estado = CASE sku ${estadoCases} ELSE estado END,
+      tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
+      updated_at = CASE
+        WHEN
+          precio <> CASE sku ${precioCases} ELSE precio END
+          OR stock <> CASE sku ${stockCases} ELSE stock END
+          OR estado <> CASE sku ${estadoCases} ELSE estado END
+          OR (
+            tiempo_envio <> CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END
+            OR (tiempo_envio IS NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NOT NULL)
+            OR (tiempo_envio IS NOT NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NULL)
+          )
+        THEN NOW()
+        ELSE updated_at
+      END
+    WHERE sku IN (${skus})
+  `;
 
     const result = await this.productosMadreEntityManager.query(sql);
     return result.affectedRows || 0;

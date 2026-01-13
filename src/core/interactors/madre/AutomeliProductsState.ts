@@ -10,7 +10,7 @@ export interface ProductHashData {
 }
 
 @Injectable()
-export class AutomeliProductsStateService {
+export class AutomeliProductsState {
   constructor(
     private readonly hasher: ProductStateHasher,
     @Inject('IAutomeliProductsStateCache')
@@ -40,5 +40,3 @@ export class AutomeliProductsStateService {
     await this.cache.setHashes(map);
   }
 }
-
-
