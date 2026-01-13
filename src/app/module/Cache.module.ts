@@ -1,7 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-ioredis-yet';
+import { redisInsStore } from 'cache-manager-ioredis-yet';
 import { CacheManager } from '../driver/cache/CacheManager';
+import { RedisClientModule } from './RedisClient.module';
+import Redis from 'ioredis';
 
 const CACHE_TTL_SECONDS = 5 * 60 * 60; // 5 hours
 
@@ -9,17 +11,16 @@ const CACHE_TTL_SECONDS = 5 * 60 * 60; // 5 hours
 @Module({
   providers: [CacheManager],
   imports: [
+    RedisClientModule,
     NestCacheModule.registerAsync({
-      useFactory: async () => ({
-        store: redisStore,
-        ttl: CACHE_TTL_SECONDS,
-        max: 1000000,
-        host: process.env.REDIS_HOST,
-        port: Number(process.env.REDIS_PORT),
-        username: process.env.REDIS_USERNAME,
-        password: process.env.REDIS_PASSWORD,
-        tls: {} // ⬅️ obligatorio para DigitalOcean
-      })
+      imports: [RedisClientModule],
+      useFactory: async (redisClient: Redis) => ({
+        store: redisInsStore(redisClient, {
+          ttl: CACHE_TTL_SECONDS,
+          max: 1000000,
+        }),
+      }),
+      inject: ['REDIS_CLIENT']
     })
   ],
   exports: [NestCacheModule, CacheManager]
