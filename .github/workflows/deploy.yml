@@ -27,5 +27,5 @@ jobs:
             npm ci
             npm run build
             pm2 restart madre-api || pm2 start dist/main.js --name madre-api
-            pm2 restart madre-worker || pm2 start dist/worker.js --name madre-worker
+            pm2 save
           EOF
