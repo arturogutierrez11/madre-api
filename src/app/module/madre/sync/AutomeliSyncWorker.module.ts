@@ -61,6 +61,9 @@ import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
       provide: 'ISyncLock',
       useClass: RedisSyncLock
     }
+  ],
+  exports: [
+    SyncMadreDbFromAutomeli // ⬅️ CLAVE
   ]
 })
 export class AutomeliSyncWorkerModule {}
