@@ -3,7 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MarketplaceProductsBulkController } from 'src/app/controller/madre/products-sync/MarketplaceProductsBulk.Controller';
+import { ProductSyncRunsController } from 'src/app/controller/madre/products-sync/ProductSyncRuns.Controller';
 import { SQLProductSyncRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRepository';
+import { SQLProductSyncRunRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRunRepository';
 import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/IProductSyncRepository';
 
 @Module({
@@ -21,12 +23,16 @@ import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/pro
       autoLoadEntities: false
     })
   ],
-  controllers: [MarketplaceProductsBulkController],
+  controllers: [MarketplaceProductsBulkController, ProductSyncRunsController],
   providers: [
     SQLProductSyncRepository,
     {
       provide: 'IProductSyncRepository',
       useClass: SQLProductSyncRepository
+    },
+    {
+      provide: 'IProductSyncRunRepository',
+      useClass: SQLProductSyncRunRepository
     }
   ],
   exports: ['IProductSyncRepository']
