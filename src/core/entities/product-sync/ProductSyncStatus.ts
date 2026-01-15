@@ -1,1 +1,6 @@
-export type ProductSyncStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'ERROR' | 'EN_REVISION' | string; // por si el marketplace agrega estados nuevos
+export type ProductSyncStatus =
+  | 'ACTIVE' // Vendible
+  | 'PAUSED' // Pausado (editable)
+  | 'PENDING' // En revisión Megatone (editable)
+  | 'DELETED' // Eliminado (NO editable)
+  | 'ERROR'; // Estado inválido
