@@ -4,9 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MarketplaceProductsBulkController } from 'src/app/controller/madre/products-sync/MarketplaceProductsBulk.Controller';
 import { ProductSyncRunsController } from 'src/app/controller/madre/products-sync/ProductSyncRuns.Controller';
+
 import { SQLProductSyncRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRepository';
 import { SQLProductSyncRunRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRunRepository';
-import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/IProductSyncRepository';
+
+import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/ProductSyncUpdateService';
 
 @Module({
   imports: [
@@ -23,9 +25,24 @@ import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/pro
       autoLoadEntities: false
     })
   ],
+
   controllers: [MarketplaceProductsBulkController, ProductSyncRunsController],
+
   providers: [
+    // =====================
+    // REPOSITORIES
+    // =====================
     SQLProductSyncRepository,
+    SQLProductSyncRunRepository,
+
+    // =====================
+    // SERVICES
+    // =====================
+    ProductSyncUpdateService,
+
+    // =====================
+    // TOKENS
+    // =====================
     {
       provide: 'IProductSyncRepository',
       useClass: SQLProductSyncRepository
@@ -35,6 +52,7 @@ import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/pro
       useClass: SQLProductSyncRunRepository
     }
   ],
-  exports: ['IProductSyncRepository']
+
+  exports: ['IProductSyncRepository', ProductSyncUpdateService]
 })
 export class ProductSyncModule {}

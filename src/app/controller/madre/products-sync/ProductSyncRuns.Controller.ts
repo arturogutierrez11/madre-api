@@ -3,7 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBody } from '@nestjs/s
 
 import { IProductSyncRunRepository } from 'src/core/adapters/repositories/madre/product-sync/IProductSyncRunRepository';
 
-@ApiTags('internal-product-sync')
+@ApiTags('Procesos para registrar en sync_runs cunado se inicia un proceso de carga masiva de productos')
 @Controller('internal/product-sync/runs')
 export class ProductSyncRunsController {
   constructor(

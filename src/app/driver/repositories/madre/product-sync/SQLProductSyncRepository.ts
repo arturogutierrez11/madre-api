@@ -13,6 +13,9 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     private readonly entityManager: EntityManager
   ) {}
 
+  /* ======================================
+     BULK UPSERT
+  ====================================== */
   async bulkUpsert(items: ProductSyncItem[]): Promise<void> {
     await this.entityManager.transaction(async manager => {
       for (const item of items) {
@@ -30,10 +33,16 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
           await manager.query(
             `
             INSERT INTO product_sync_items (
-              id, marketplace, external_id,
-              seller_sku, marketplace_sku,
-              price, stock, status,
-              raw_payload, last_seen_at
+              id,
+              marketplace,
+              external_id,
+              seller_sku,
+              marketplace_sku,
+              price,
+              stock,
+              status,
+              raw_payload,
+              last_seen_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             `,
@@ -55,7 +64,9 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
         const current = rows[0];
 
         const hasChanged =
-          current.price !== item.price || current.stock !== item.stock || current.status !== item.status;
+          Number(current.price) !== item.price ||
+          Number(current.stock) !== item.stock ||
+          current.status !== item.status;
 
         if (hasChanged) {
           await manager.query(
@@ -75,8 +86,11 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
           await manager.query(
             `
             INSERT INTO product_sync_history (
-              id, product_sync_item_id,
-              price, stock, status,
+              id,
+              product_sync_item_id,
+              price,
+              stock,
+              status,
               raw_payload
             )
             VALUES (?, ?, ?, ?, ?, ?)
@@ -95,5 +109,89 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
         }
       }
     });
+  }
+
+  /* ======================================
+     FIND ITEM
+  ====================================== */
+  async findItemById(id: string): Promise<any | null> {
+    const rows = await this.entityManager.query(
+      `
+      SELECT *
+      FROM product_sync_items
+      WHERE id = ?
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    return rows[0] ?? null;
+  }
+
+  async findItemBySellerSku(marketplace: string, sellerSku: string): Promise<any | null> {
+    const rows = await this.entityManager.query(
+      `
+      SELECT *
+      FROM product_sync_items
+      WHERE marketplace = ?
+        AND seller_sku = ?
+      LIMIT 1
+      `,
+      [marketplace, sellerSku]
+    );
+
+    return rows[0] ?? null;
+  }
+
+  /* ======================================
+     HISTORY (ID)
+  ====================================== */
+  async findHistoryByProductSyncItemId(productSyncItemId: string): Promise<any[]> {
+    return this.entityManager.query(
+      `
+      SELECT
+        id,
+        product_sync_item_id,
+        price,
+        stock,
+        status,
+        raw_payload,
+        created_at
+      FROM product_sync_history
+      WHERE product_sync_item_id = ?
+      ORDER BY created_at DESC
+      `,
+      [productSyncItemId]
+    );
+  }
+
+  async findHistoryByStatus(productSyncItemId: string, status: string): Promise<any[]> {
+    return this.entityManager.query(
+      `
+      SELECT *
+      FROM product_sync_history
+      WHERE product_sync_item_id = ?
+        AND status = ?
+      ORDER BY created_at DESC
+      `,
+      [productSyncItemId, status]
+    );
+  }
+
+  /* ======================================
+     HISTORY (SELLER SKU)
+  ====================================== */
+  async findHistoryBySellerSku(marketplace: string, sellerSku: string): Promise<any[]> {
+    const item = await this.findItemBySellerSku(marketplace, sellerSku);
+    if (!item) return [];
+
+    return this.findHistoryByProductSyncItemId(item.id);
+  }
+
+  async findHistoryBySellerSkuAndStatus(marketplace: string, sellerSku: string, status: string): Promise<any[]> {
+    const item = await this.findItemBySellerSku(marketplace, sellerSku);
+    if (!item) return [];
+
+    return this.findHistoryByStatus(item.id, status);
   }
 }
