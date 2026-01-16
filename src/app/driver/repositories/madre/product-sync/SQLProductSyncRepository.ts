@@ -179,6 +179,9 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
   }
 
   async listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]> {
+    const safeLimit = Number(limit);
+    const safeOffset = Number(offset);
+
     return this.entityManager.query(
       `
     SELECT
@@ -192,10 +195,9 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     FROM product_sync_items
     WHERE marketplace = ?
     ORDER BY seller_sku
-    LIMIT ?
-    OFFSET ?
+    LIMIT ${safeLimit} OFFSET ${safeOffset}
     `,
-      [marketplace, limit, offset]
+      [marketplace]
     );
   }
 
