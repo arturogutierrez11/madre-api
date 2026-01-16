@@ -143,7 +143,7 @@ export class MarketplaceProductsBulkController {
     };
   }
 
-  @Get('items')
+  @Get('items/all')
   @ApiOperation({
     summary: 'Listar productos sincronizados del marketplace',
     description:
