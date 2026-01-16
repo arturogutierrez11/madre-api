@@ -87,7 +87,7 @@ export class MarketplaceProductsBulkController {
   /* =====================================================
      HISTORIAL POR SELLER SKU
   ===================================================== */
-  @Get('/:sellerSku/history')
+  @Get('/:sellerSku')
   @ApiOperation({ summary: 'Historial completo por sellerSku' })
   @ApiParam({ name: 'sellerSku', description: 'SKU del vendedor' })
   async getHistoryBySellerSku(@Param('sellerSku') sellerSku: string) {
