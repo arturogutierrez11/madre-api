@@ -8,7 +8,8 @@ import {
   Param,
   Post,
   Put,
-  BadRequestException
+  BadRequestException,
+  Query
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBody, ApiParam } from '@nestjs/swagger';
 
@@ -86,7 +87,7 @@ export class MarketplaceProductsBulkController {
   /* =====================================================
      HISTORIAL POR SELLER SKU
   ===================================================== */
-  @Get('/seller/:sellerSku/history')
+  @Get('/:sellerSku/history')
   @ApiOperation({ summary: 'Historial completo por sellerSku' })
   @ApiParam({ name: 'sellerSku', description: 'SKU del vendedor' })
   async getHistoryBySellerSku(@Param('sellerSku') sellerSku: string) {
@@ -100,7 +101,7 @@ export class MarketplaceProductsBulkController {
   /* =====================================================
      UPDATE MANUAL (SELLER SKU)
   ===================================================== */
-  @Put('/seller/:sellerSku')
+  @Put('/:sellerSku')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Actualizar manualmente un producto sincronizado',
@@ -139,6 +140,36 @@ export class MarketplaceProductsBulkController {
     return {
       status: 'UPDATED',
       sellerSku
+    };
+  }
+
+  @Get('items')
+  @ApiOperation({
+    summary: 'Listar productos sincronizados del marketplace',
+    description:
+      'Devuelve el estado actual de los productos existentes en product_sync_items. ' +
+      'Usado por procesos FULL y DELTA para comparar contra Madre.'
+  })
+  async listItems(
+    @Query('marketplace') marketplace = 'megatone',
+    @Query('limit') limit = '100',
+    @Query('offset') offset = '0'
+  ) {
+    const parsedLimit = Math.min(Number(limit) || 100, 500);
+    const parsedOffset = Number(offset) || 0;
+
+    const items = await this.productSyncRepository.listSyncItems(marketplace, parsedLimit, parsedOffset);
+
+    const total = await this.productSyncRepository.countSyncItems(marketplace);
+
+    return {
+      items,
+      limit: parsedLimit,
+      offset: parsedOffset,
+      count: items.length,
+      total,
+      hasNext: parsedOffset + parsedLimit < total,
+      nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
     };
   }
 }

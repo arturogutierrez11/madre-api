@@ -11,6 +11,8 @@ export interface IProductSyncRepository {
   ====================================== */
   findItemById(id: string): Promise<any | null>;
   findItemBySellerSku(marketplace: string, sellerSku: string): Promise<any | null>;
+  listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]>;
+  countSyncItems(marketplace: string): Promise<number>;
 
   /* ======================================
      HISTORY

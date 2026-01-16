@@ -178,6 +178,40 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     );
   }
 
+  async listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]> {
+    return this.entityManager.query(
+      `
+    SELECT
+      id,
+      seller_sku,
+      external_id,
+      price,
+      stock,
+      status,
+      last_seen_at
+    FROM product_sync_items
+    WHERE marketplace = ?
+    ORDER BY seller_sku
+    LIMIT ?
+    OFFSET ?
+    `,
+      [marketplace, limit, offset]
+    );
+  }
+
+  async countSyncItems(marketplace: string): Promise<number> {
+    const rows = await this.entityManager.query(
+      `
+    SELECT COUNT(*) AS total
+    FROM product_sync_items
+    WHERE marketplace = ?
+    `,
+      [marketplace]
+    );
+
+    return Number(rows[0]?.total ?? 0);
+  }
+
   /* ======================================
      HISTORY (SELLER SKU)
   ====================================== */
