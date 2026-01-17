@@ -8,8 +8,6 @@ import { ProductSyncStatus } from 'src/core/entities/product-sync/ProductSyncSta
 
 @Injectable()
 export class ProductSyncUpdateService {
-  private readonly MARKETPLACE: ProductSyncMarketplace = 'megatone';
-
   constructor(private readonly productSyncRepository: SQLProductSyncRepository) {}
 
   async updateBySellerSku(dto: UpdateProductSyncItemDto): Promise<void> {
@@ -17,24 +15,47 @@ export class ProductSyncUpdateService {
       throw new BadRequestException('sellerSku es obligatorio');
     }
 
-    const current = await this.productSyncRepository.findItemBySellerSku(this.MARKETPLACE, dto.sellerSku);
+    const current = await this.productSyncRepository.findItemBySellerSku('megatone', dto.sellerSku);
 
+    /* =====================================================
+       CASO 1: NO EXISTE → INSERTAR
+    ===================================================== */
     if (!current) {
-      throw new NotFoundException(`No existe product_sync_item para sellerSku ${dto.sellerSku} en ${this.MARKETPLACE}`);
+      const newItem: ProductSyncItem = {
+        marketplace: 'megatone',
+        externalId: `UNKNOWN-${dto.sellerSku}`,
+        sellerSku: dto.sellerSku,
+        marketplaceSku: null,
+
+        price: dto.price ?? 0,
+        stock: dto.stock ?? 0,
+        status: 'ERROR',
+
+        raw: {
+          source: 'manual-not-in-madre',
+          reason: 'Item no existe en product_sync_items',
+          payload: dto.raw ?? {}
+        }
+      };
+
+      await this.productSyncRepository.bulkUpsert([newItem]);
+      return;
     }
 
+    /* =====================================================
+       CASO 2: EXISTE → UPDATE NORMAL
+    ===================================================== */
     const updatedItem: ProductSyncItem = {
-      marketplace: this.MARKETPLACE,
-
+      marketplace: current.marketplace as ProductSyncMarketplace,
       externalId: String(current.external_id),
       sellerSku: current.seller_sku,
-      marketplaceSku: current.marketplace_sku ?? null,
+      marketplaceSku: current.marketplace_sku,
 
       price: dto.price ?? Number(current.price),
       stock: dto.stock ?? Number(current.stock),
       status: (dto.status ?? current.status) as ProductSyncStatus,
 
-      raw: dto.raw ? dto.raw : JSON.parse(current.raw_payload ?? '{}')
+      raw: dto.raw ?? JSON.parse(current.raw_payload ?? '{}')
     };
 
     await this.productSyncRepository.bulkUpsert([updatedItem]);
