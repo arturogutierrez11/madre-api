@@ -4,3 +4,4 @@ export type ProductSyncStatus =
   | 'PENDING' // En revisión Megatone (editable)
   | 'DELETED' // Eliminado (NO editable)
   | 'ERROR'; // Estado inválido
+('NOT_IN_MADRE');
