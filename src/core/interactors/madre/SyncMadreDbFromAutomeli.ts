@@ -117,17 +117,21 @@ export class SyncMadreDbFromAutomeli {
     }
   }
 
-  private async fetchBatch(basePage: number): Promise<{ products: AutomeliProduct[]; endReached: boolean }> {
+  private async fetchBatch(basePage: number): Promise<{
+    products: AutomeliProduct[];
+    endReached: boolean;
+  }> {
     const pagePromises: Promise<PageFetchResult>[] = [];
 
     for (let i = 0; i < PAGES_PER_BATCH; i++) {
-      const page = basePage + i;
-      pagePromises.push(this.fetchPage(page));
+      pagePromises.push(this.fetchPage(basePage + i));
     }
 
     const results = await Promise.all(pagePromises);
 
-    const endReached = results.every(r => r.ok && r.products.length === 0);
+    const successfulPages = results.filter(r => r.ok);
+    const endReached = successfulPages.length > 0 && successfulPages.every(r => r.products.length === 0);
+
     const products = results.flatMap(r => r.products);
 
     return { products, endReached };
