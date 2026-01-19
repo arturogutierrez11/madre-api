@@ -3,13 +3,13 @@ import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { ProductsService } from 'src/app/services/madre/products/ProductsService';
 
 @ApiTags('products')
-@Controller('Listar uno o muchos products')
+@Controller('products')
 export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
 
   @Get('madre')
   @ApiOperation({
-    summary: 'Listar productos madre',
+    summary: 'Listar uno o muchos productos madre',
     description: 'Devuelve un listado paginado de productos madre. Permite filtrar opcionalmente por SKU.'
   })
   @ApiQuery({
