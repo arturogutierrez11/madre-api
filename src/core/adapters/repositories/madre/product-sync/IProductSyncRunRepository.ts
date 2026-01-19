@@ -5,6 +5,5 @@ export interface IProductSyncRunRepository {
   increment(runId: string, data: { batches?: number; items?: number; failed?: number }): Promise<void>;
   finish(runId: string, status: 'SUCCESS' | 'PARTIAL'): Promise<void>;
   fail(runId: string, errorMessage: string): Promise<void>;
-
   list(marketplace: string, limit: number, offset: number): Promise<ProductSyncRunDto[]>;
 }

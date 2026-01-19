@@ -9,7 +9,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  setupSwagger(app, 'Madre API', 'API principal de Madre DB', ['madre api']);
+  setupSwagger(app, 'Madre API', 'API principal de Madre DB', ['']);
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 

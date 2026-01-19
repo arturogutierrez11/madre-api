@@ -214,6 +214,21 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     return Number(rows[0]?.total ?? 0);
   }
 
+  async countSyncItemsByStatus(marketplace: string): Promise<{ status: string; total: number }[]> {
+    return this.entityManager.query(
+      `
+    SELECT
+      status,
+      COUNT(*) AS total
+    FROM product_sync_items
+    WHERE marketplace = ?
+      AND status IN ('ACTIVE', 'PAUSED', 'PENDING', 'ERROR', 'DELETED')
+    GROUP BY status
+    `,
+      [marketplace]
+    );
+  }
+
   /* ======================================
      HISTORY (SELLER SKU)
   ====================================== */
