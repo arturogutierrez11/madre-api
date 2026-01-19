@@ -11,7 +11,7 @@ import {
   BadRequestException,
   Query
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBody, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/IProductSyncRepository';
 import { BulkMarketplaceProductsDto } from 'src/core/entities/product-sync/dto/BulkMarketplaceProductsDto';
@@ -19,7 +19,7 @@ import { ProductSyncItem } from 'src/core/entities/product-sync/ProductSyncItem'
 import { UpdateProductSyncItemDto } from 'src/core/entities/product-sync/dto/UpdateProductSyncItemDto';
 import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/ProductSyncUpdateService';
 
-@ApiTags('Procesos internos · Sincronización de Productos')
+@ApiTags('Procesos internos · Sincronización de Productos - Sync_items')
 @Controller('internal/marketplace/products')
 export class MarketplaceProductsBulkController {
   constructor(
@@ -104,9 +104,10 @@ export class MarketplaceProductsBulkController {
   @Put('/:sellerSku')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Actualizar manualmente un producto sincronizado',
+    summary: 'Actualizar manualmente un producto sincronizado en sync_items',
     description:
-      'Actualiza price / stock / status de un producto usando sellerSku. ' + 'Registra historial automáticamente.'
+      'Actualiza price / stock / status de un producto usando sellerSku. ' +
+      'Registra historial automáticamente (en sync_history).'
   })
   @ApiParam({
     name: 'sellerSku',
@@ -142,19 +143,36 @@ export class MarketplaceProductsBulkController {
       sellerSku
     };
   }
-
   @Get('items/all')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Listar productos sincronizados del marketplace',
-    description:
-      'Devuelve el estado actual de los productos existentes en product_sync_items. ' +
-      'Usado por procesos FULL y DELTA para comparar contra Madre.'
+    summary: 'Listar productos sincronizados por marketplace en sync_items',
+    description: 'Devuelve el estado actual de los productos existentes en product_sync_items.'
+  })
+  @ApiQuery({
+    name: 'marketplace',
+    example: 'megatone',
+    required: true
+  })
+  @ApiQuery({
+    name: 'limit',
+    example: 100,
+    required: false
+  })
+  @ApiQuery({
+    name: 'offset',
+    example: 0,
+    required: false
   })
   async listItems(
-    @Query('marketplace') marketplace = 'megatone',
+    @Query('marketplace') marketplace: string,
     @Query('limit') limit = '100',
     @Query('offset') offset = '0'
   ) {
+    if (!marketplace) {
+      throw new Error('marketplace query param is required');
+    }
+
     const parsedLimit = Math.min(Number(limit) || 100, 500);
     const parsedOffset = Number(offset) || 0;
 
@@ -171,5 +189,51 @@ export class MarketplaceProductsBulkController {
       hasNext: parsedOffset + parsedLimit < total,
       nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
     };
+  }
+
+  @Get(':marketplace/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resumen de productos por estado por marketplace en sync_items',
+    description: `
+Devuelve la cantidad de productos en **product_sync_items**
+agrupados por estado para un marketplace determinado.
+
+Estados incluidos:
+- ACTIVE
+- PAUSED
+- PENDING
+- ERROR
+- DELETED
+    `
+  })
+  @ApiParam({
+    name: 'marketplace',
+    example: 'megatone',
+    description: 'Marketplace a consultar (ej: megatone, oncity, etc)',
+    required: true
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resumen de productos por estado',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            example: 'ACTIVE'
+          },
+          total: {
+            type: 'number',
+            example: 376
+          }
+        }
+      }
+    }
+  })
+  async getStatusSummary(@Param('marketplace') marketplace: string) {
+    return this.productSyncRepository.countSyncItemsByStatus(marketplace);
   }
 }
