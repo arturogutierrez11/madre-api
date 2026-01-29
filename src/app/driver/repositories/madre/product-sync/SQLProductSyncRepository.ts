@@ -191,7 +191,8 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
       price,
       stock,
       status,
-      last_seen_at
+      last_seen_at,
+      raw_payload
     FROM product_sync_items
     WHERE marketplace = ?
     ORDER BY seller_sku
