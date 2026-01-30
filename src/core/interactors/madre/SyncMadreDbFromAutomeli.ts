@@ -1,12 +1,13 @@
-import { IAutomeliProductsRepository } from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
+import {
+  AutomeliPaginatedResponse,
+  IAutomeliProductsRepository
+} from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
 import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
-import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
 import { AutomeliProductsState, ProductHashData } from './AutomeliProductsState';
 import { ProductStateHasher } from './ProductStateHasher';
 import { Inject, Injectable } from '@nestjs/common';
 
-const PAGES_PER_BATCH = 20;
 const FETCH_RETRIES = 3;
 const FETCH_RETRY_BASE_DELAY_MS = 500;
 
@@ -16,14 +17,14 @@ interface SyncStats {
   totalUpdated: number;
   totalHashesUpdated: number;
   totalSkipped: number;
-  batches: number;
+  requests: number;
   startTime: Date;
   endTime?: Date;
 }
 
-interface PageFetchResult {
+interface FetchResult {
   ok: boolean;
-  products: AutomeliProduct[];
+  response: AutomeliPaginatedResponse;
 }
 
 @Injectable()
@@ -52,7 +53,7 @@ export class SyncMadreDbFromAutomeli {
       totalUpdated: 0,
       totalHashesUpdated: 0,
       totalSkipped: 0,
-      batches: 0,
+      requests: 0,
       startTime: new Date()
     };
 
@@ -65,43 +66,54 @@ export class SyncMadreDbFromAutomeli {
     console.log('[AutomeliSync] Starting sync for seller:', this.sellerId);
 
     try {
-      let basePage = 1;
+      let cursor: string | undefined = undefined;
+      let hasMore = true;
 
-      while (true) {
-        console.log(`[AutomeliSync] Processing batch starting at page ${basePage}`);
+      while (hasMore) {
+        stats.requests++;
+        console.log(`[AutomeliSync] Fetching page ${stats.requests}${cursor ? ` (cursor: ${cursor.substring(0, 20)}...)` : ' (initial)'}`);
 
-        const { products, endReached } = await this.fetchBatch(basePage);
-        stats.totalFetched += products.length;
-        stats.batches++;
+        const fetchResult = await this.fetchProducts(cursor);
 
-        console.log(`[AutomeliSync] Fetched ${products.length} products in batch ${stats.batches}`);
-
-        if (endReached) {
-          console.log('[AutomeliSync] End reached (all pages empty in batch)');
+        if (!fetchResult.ok) {
+          console.error('[AutomeliSync] Failed to fetch products after retries, stopping sync');
           break;
         }
 
-        const changedProducts = await this.productsStateService.filterChangedProducts(products);
-        stats.totalChanged += changedProducts.length;
-        stats.totalSkipped += products.length - changedProducts.length;
+        const { response } = fetchResult;
+        const products = response.data;
+        stats.totalFetched += products.length;
 
-        console.log(
-          `[AutomeliSync] Found ${changedProducts.length} changed products (${products.length - changedProducts.length} unchanged)`
-        );
+        console.log(`[AutomeliSync] Fetched ${products.length} products (total from API: ${response.count})`);
 
-        if (changedProducts.length > 0) {
-          const updatedCount = await this.bulkUpdate(changedProducts);
-          stats.totalUpdated += updatedCount;
-
-          await this.productsStateService.updateHashes(changedProducts);
-          stats.totalHashesUpdated += changedProducts.length;
+        if (products.length > 0) {
+          const changedProducts = await this.productsStateService.filterChangedProducts(products);
+          stats.totalChanged += changedProducts.length;
+          stats.totalSkipped += products.length - changedProducts.length;
 
           console.log(
-            `[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`
+            `[AutomeliSync] Found ${changedProducts.length} changed products (${products.length - changedProducts.length} unchanged)`
           );
+
+          if (changedProducts.length > 0) {
+            const updatedCount = await this.bulkUpdate(changedProducts);
+            stats.totalUpdated += updatedCount;
+
+            await this.productsStateService.updateHashes(changedProducts);
+            stats.totalHashesUpdated += changedProducts.length;
+
+            console.log(
+              `[AutomeliSync] Updated ${updatedCount} products in database, ${changedProducts.length} hashes in Redis`
+            );
+          }
         }
 
-        basePage += PAGES_PER_BATCH;
+        hasMore = response.has_more;
+        cursor = response.next_cursor ?? undefined;
+
+        if (!hasMore) {
+          console.log('[AutomeliSync] No more pages to fetch');
+        }
       }
 
       stats.endTime = new Date();
@@ -117,39 +129,22 @@ export class SyncMadreDbFromAutomeli {
     }
   }
 
-  private async fetchBatch(basePage: number): Promise<{
-    products: AutomeliProduct[];
-    endReached: boolean;
-  }> {
-    const pagePromises: Promise<PageFetchResult>[] = [];
-
-    for (let i = 0; i < PAGES_PER_BATCH; i++) {
-      pagePromises.push(this.fetchPage(basePage + i));
-    }
-
-    const results = await Promise.all(pagePromises);
-
-    const successfulPages = results.filter(r => r.ok);
-    const endReached = successfulPages.length > 0 && successfulPages.every(r => r.products.length === 0);
-
-    const products = results.flatMap(r => r.products);
-
-    return { products, endReached };
-  }
-
-  private async fetchPage(page: number): Promise<PageFetchResult> {
+  private async fetchProducts(cursor?: string): Promise<FetchResult> {
     for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
       try {
-        const products = await this.automeliRepository.getLoadedProducts({
+        const response = await this.automeliRepository.getLoadedProducts({
           sellerId: this.sellerId,
           appStatus: 1,
-          aux: page
+          cursor
         });
 
-        return { ok: true, products };
+        return { ok: true, response };
       } catch (error) {
         const message = error?.message ?? error;
-        console.error(`[AutomeliSync] Failed to fetch page ${page} (attempt ${attempt}/${FETCH_RETRIES}):`, message);
+        console.error(
+          `[AutomeliSync] Failed to fetch products (attempt ${attempt}/${FETCH_RETRIES}):`,
+          message
+        );
 
         if (attempt < FETCH_RETRIES) {
           const delayMs = FETCH_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
@@ -158,8 +153,11 @@ export class SyncMadreDbFromAutomeli {
       }
     }
 
-    // After all retries, mark as failed so it won't trigger end-of-data
-    return { ok: false, products: [] };
+    // After all retries, mark as failed
+    return {
+      ok: false,
+      response: { data: [], next_cursor: null, has_more: false, count: 0 }
+    };
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -205,7 +203,7 @@ ${separator}
 ${separator}
 
   Duration:              ${duration}
-  Batches processed:     ${stats.batches}
+  API requests:          ${stats.requests}
 
   ─── PRODUCTS ───────────────────────────────────
   Total fetched:         ${stats.totalFetched.toLocaleString()}
