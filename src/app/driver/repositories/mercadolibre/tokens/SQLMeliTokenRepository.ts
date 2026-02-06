@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 import { ISQLMeliTokenRepository } from 'src/core/adapters/repositories/mercadolibre/tokens/ISQLMeliTokenRepository';
 import { MeliTokenRow } from 'src/core/entities/mercadolibre/tokens/MeliTokenRow';
-import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
@@ -12,23 +12,25 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
   ) {}
 
   /**
-   * Obtiene el último token guardado
+   * Obtiene el último token válido para ESTE client_id
    */
   async getToken(): Promise<MeliTokenRow | null> {
     const result = await this.entityManager.query(
       `
       SELECT *
       FROM mercadolibre_tokens
+      WHERE client_id = ?
       ORDER BY id DESC
       LIMIT 1
-      `
+      `,
+      [process.env.MELI_CLIENT_ID]
     );
 
     return result.length ? result[0] : null;
   }
 
   /**
-   * Inserta un nuevo token
+   * Inserta un nuevo token asociado al client_id actual
    */
   async saveToken(data: {
     access_token: string;
@@ -42,15 +44,16 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
         access_token,
         refresh_token,
         expires_in,
-        expires_at
-      ) VALUES (?, ?, ?, ?)
+        expires_at,
+        client_id
+      ) VALUES (?, ?, ?, ?, ?)
       `,
-      [data.access_token, data.refresh_token, data.expires_in, data.expires_at]
+      [data.access_token, data.refresh_token, data.expires_in, data.expires_at, process.env.MELI_CLIENT_ID]
     );
   }
 
   /**
-   * Actualiza el último token (si existe)
+   * Actualiza el último token del client_id actual
    */
   async updateLastToken(data: {
     access_token: string;
@@ -59,7 +62,9 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
     expires_at: Date;
   }): Promise<void> {
     const token = await this.getToken();
-    if (!token) return;
+    if (!token) {
+      throw new Error('[SQLMeliTokenRepository] No token found to update for current client_id');
+    }
 
     await this.entityManager.query(
       `
