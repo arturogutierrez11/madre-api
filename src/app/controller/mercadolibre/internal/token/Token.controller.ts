@@ -13,7 +13,16 @@ export class TokenController {
   constructor(private readonly meliTokenService: MeliTokenService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Obtiene el último token de MercadoLibre' })
+  @ApiOperation({
+    summary: 'Obtiene el último token de MercadoLibre',
+    description: `
+Devuelve el último token almacenado para el **client_id actual**.
+
+📌 **Notas**
+- Endpoint interno
+- El token está asociado al client_id configurado en la app
+    `
+  })
   @ApiResponse({
     status: 200,
     description: 'Último token guardado',
@@ -24,7 +33,16 @@ export class TokenController {
   }
 
   @Get('expired')
-  @ApiOperation({ summary: 'Indica si el token actual está vencido' })
+  @ApiOperation({
+    summary: 'Indica si el token actual está vencido',
+    description: `
+Evalúa si el token almacenado está expirado según **expires_at**.
+
+📌 **Notas**
+- Si no existe token, se considera expirado
+- No aplica threshold de refresh (eso vive en el interactor)
+    `
+  })
   @ApiResponse({
     status: 200,
     description: 'Estado de expiración del token',
@@ -47,7 +65,14 @@ export class TokenController {
   @Post()
   @ApiOperation({
     summary: 'Guarda o actualiza el token de MercadoLibre',
-    description: 'Endpoint interno. El backend calcula automáticamente expires_at.'
+    description: `
+Guarda o actualiza el token de MercadoLibre para el **client_id actual**.
+
+📌 **Notas**
+- Endpoint interno
+- Usado por el callback OAuth o procesos internos
+- El backend calcula automáticamente **expires_at**
+    `
   })
   @ApiConsumes('application/json')
   @ApiBody({

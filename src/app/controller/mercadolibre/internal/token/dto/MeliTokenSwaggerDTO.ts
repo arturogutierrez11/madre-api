@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class MeliTokenSwaggerDTO {
   @ApiProperty({
@@ -19,9 +19,10 @@ export class MeliTokenSwaggerDTO {
   })
   expires_in: number;
 
-  @ApiProperty({
-    description: 'Fecha exacta de expiración del token (ISO 8601)',
-    example: '2026-02-05T15:30:00.000Z'
+  @ApiPropertyOptional({
+    description: 'Fecha exacta de expiración del token (calculada por el backend)',
+    example: '2026-02-05T15:30:00.000Z',
+    readOnly: true
   })
-  expires_at: string;
+  expires_at?: string;
 }

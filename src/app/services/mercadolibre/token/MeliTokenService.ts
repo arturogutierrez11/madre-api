@@ -9,15 +9,24 @@ export class MeliTokenService {
     private readonly meliTokenRepository: ISQLMeliTokenRepository
   ) {}
 
+  /**
+   * Devuelve el último token asociado al client_id actual
+   */
   async getLastToken(): Promise<MeliTokenDTO | null> {
     return this.meliTokenRepository.getToken();
   }
 
+  /**
+   * Inserta un nuevo token (OAuth inicial)
+   */
   async saveToken(token: MeliTokenDTO): Promise<void> {
     const tokenToSave = this.normalizeAndValidate(token);
     await this.meliTokenRepository.saveToken(tokenToSave);
   }
 
+  /**
+   * Inserta o actualiza el token del client_id actual
+   */
   async upsertToken(token: MeliTokenDTO): Promise<void> {
     const tokenToSave = this.normalizeAndValidate(token);
 
@@ -31,6 +40,10 @@ export class MeliTokenService {
     await this.meliTokenRepository.updateLastToken(tokenToSave);
   }
 
+  /**
+   * Check simple de expiración (sin threshold)
+   * El threshold vive en el interactor de acceso
+   */
   isTokenExpired(token: MeliTokenDTO): boolean {
     return new Date(token.expires_at).getTime() <= Date.now();
   }
@@ -57,10 +70,13 @@ export class MeliTokenService {
       throw new BadRequestException('expires_in must be a number greater than 0');
     }
 
+    // 🔥 siempre recalculamos expires_at en base a expires_in
     const expiresAt = new Date(Date.now() + token.expires_in * 1000);
 
     return {
-      ...token,
+      access_token: token.access_token.trim(),
+      refresh_token: token.refresh_token.trim(),
+      expires_in: token.expires_in,
       expires_at: expiresAt
     };
   }
