@@ -12,25 +12,21 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
   ) {}
 
   /**
-   * Obtiene el último token válido para ESTE client_id
+   * Devuelve el último token guardado (single-token storage)
    */
   async getToken(): Promise<MeliTokenRow | null> {
-    const result = await this.entityManager.query(
-      `
+    const result = await this.entityManager.query(`
       SELECT *
       FROM mercadolibre_tokens
-      WHERE client_id = ?
       ORDER BY id DESC
       LIMIT 1
-      `,
-      [process.env.MELI_CLIENT_ID]
-    );
+    `);
 
     return result.length ? result[0] : null;
   }
 
   /**
-   * Inserta un nuevo token asociado al client_id actual
+   * Inserta un nuevo token
    */
   async saveToken(data: {
     access_token: string;
@@ -44,16 +40,15 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
         access_token,
         refresh_token,
         expires_in,
-        expires_at,
-        client_id
-      ) VALUES (?, ?, ?, ?, ?)
+        expires_at
+      ) VALUES (?, ?, ?, ?)
       `,
-      [data.access_token, data.refresh_token, data.expires_in, data.expires_at, process.env.MELI_CLIENT_ID]
+      [data.access_token, data.refresh_token, data.expires_in, data.expires_at]
     );
   }
 
   /**
-   * Actualiza el último token del client_id actual
+   * PISA el último token existente
    */
   async updateLastToken(data: {
     access_token: string;
@@ -62,8 +57,9 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
     expires_at: Date;
   }): Promise<void> {
     const token = await this.getToken();
+
     if (!token) {
-      throw new Error('[SQLMeliTokenRepository] No token found to update for current client_id');
+      throw new Error('[SQLMeliTokenRepository] No token found to update');
     }
 
     await this.entityManager.query(
