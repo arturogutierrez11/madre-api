@@ -5,7 +5,7 @@ import { MeliTokenService } from 'src/app/services/mercadolibre/token/MeliTokenS
 import { MeliTokenDTO } from 'src/core/entities/mercadolibre/tokens/dto/MeliTokenDTO';
 import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 
-@ApiTags('internal-mercadolibre')
+@ApiTags('Mercado Libre - Internal')
 @ApiSecurity('internal-api-key')
 @Controller('internal/mercadolibre/token')
 @UseGuards(InternalApiKeyGuard)
