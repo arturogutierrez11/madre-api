@@ -7,6 +7,7 @@ import { AutomeliSyncWorkerModule } from './module/madre/sync/AutomeliSyncWorker
 import { ProductSyncModule } from './module/madre/product-sync/ProductSync.Module';
 import { TokenModule } from './module/mercadolibre/tokens/Token.Module';
 import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLibreItems.Module';
+import { SyncStatesModule } from './module/mercadolibre/sync/SyncStates.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLi
     AutomeliSyncWorkerModule,
     ProductSyncModule,
     TokenModule,
-    MercadoLibreItemsModule
+    MercadoLibreItemsModule,
+    SyncStatesModule
   ]
 })
 export class AppModule {}
