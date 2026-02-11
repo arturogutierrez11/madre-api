@@ -17,34 +17,34 @@ export class SQLMercadoLibreItemsRepository implements ISQLMercadoLibreItemsRepo
   async insertBulkItems(params: { sellerId: string; items: string[]; status: string }): Promise<number> {
     const { sellerId, items, status } = params;
 
-    if (items.length === 0) {
-      return 0;
-    }
+    if (!items.length) return 0;
 
-    let totalInserted = 0;
+    let totalAffected = 0;
 
     for (let i = 0; i < items.length; i += BULK_INSERT_BATCH_SIZE) {
       const batch = items.slice(i, i + BULK_INSERT_BATCH_SIZE);
-      const inserted = await this.executeBulkInsert(sellerId, batch, status);
-      totalInserted += inserted;
+      totalAffected += await this.executeBulkUpsert(sellerId, batch, status);
     }
 
-    return totalInserted;
+    return totalAffected;
   }
 
-  private async executeBulkInsert(sellerId: string, items: string[], status: string): Promise<number> {
+  private async executeBulkUpsert(sellerId: string, items: string[], status: string): Promise<number> {
     const values = items.map(itemId => `('${itemId}', '${sellerId}', '${status}', NOW(), NOW())`).join(',');
 
     const sql = `
-    INSERT INTO mercadolibre_items (
-      item_id,
-      seller_id,
-      status,
-      created_at,
-      updated_at
-    )
-    VALUES ${values}
-  `;
+      INSERT INTO mercadolibre_items (
+        item_id,
+        seller_id,
+        status,
+        created_at,
+        updated_at
+      )
+      VALUES ${values}
+      ON DUPLICATE KEY UPDATE
+        status = VALUES(status),
+        updated_at = NOW()
+    `;
 
     const result: any = await this.entityManager.query(sql);
 
