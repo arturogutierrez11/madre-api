@@ -36,21 +36,19 @@ export class SQLMercadoLibreItemsRepository implements ISQLMercadoLibreItemsRepo
     const values = items.map(itemId => `('${itemId}', '${sellerId}', '${status}', NOW(), NOW())`).join(',');
 
     const sql = `
-      INSERT INTO mercadolibre_items (
-        item_id,
-        seller_id,
-        status,
-        created_at,
-        updated_at
-      )
-      VALUES ${values}
-      ON DUPLICATE KEY UPDATE
-        status = VALUES(status),
-        updated_at = NOW()
-    `;
+    INSERT INTO mercadolibre_items (
+      item_id,
+      seller_id,
+      status,
+      created_at,
+      updated_at
+    )
+    VALUES ${values}
+  `;
 
-    const result = await this.entityManager.query(sql);
-    return result.affectedRows || 0;
+    const result: any = await this.entityManager.query(sql);
+
+    return result?.affectedRows ?? items.length;
   }
 
   async findAll(
