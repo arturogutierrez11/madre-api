@@ -8,6 +8,7 @@ import { ProductSyncModule } from './module/madre/product-sync/ProductSync.Modul
 import { TokenModule } from './module/mercadolibre/tokens/Token.Module';
 import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLibreItems.Module';
 import { SyncStatesModule } from './module/mercadolibre/sync/SyncStates.module';
+import { MercadoLibreProductsModule } from './module/mercadolibre/itemsDetails/MercadoLibreProducts.Module';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { SyncStatesModule } from './module/mercadolibre/sync/SyncStates.module';
     ProductSyncModule,
     TokenModule,
     MercadoLibreItemsModule,
-    SyncStatesModule
+    SyncStatesModule,
+    MercadoLibreProductsModule
   ]
 })
 export class AppModule {}
