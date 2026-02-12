@@ -1,7 +1,6 @@
 import { Inject, Injectable, BadRequestException } from '@nestjs/common';
-import { PaginationParams } from 'src/core/entities/common/Pagination';
-import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { ISQLMercadoLibreItemsRepository } from 'src/core/adapters/repositories/mercadolibre/itemsId/ISQLMercadoLibreItemsRepository';
+import { CursorPaginatedResult } from 'src/core/entities/mercadolibre/itemsId/PaginatedResult';
 
 @Injectable()
 export class MercadoLibreItemsService {
@@ -21,7 +20,7 @@ export class MercadoLibreItemsService {
       throw new BadRequestException('status is required');
     }
 
-    if (!items || items.length === 0) {
+    if (!items?.length) {
       return { inserted: 0 };
     }
 
@@ -35,9 +34,9 @@ export class MercadoLibreItemsService {
   }
 
   async getItemsPaginated(
-    pagination: PaginationParams,
+    pagination: { limit: number; lastId?: number },
     filters?: { sellerId?: string; status?: string }
-  ): Promise<PaginatedResult<string>> {
+  ): Promise<CursorPaginatedResult<string>> {
     return this.itemsRepository.findAll(pagination, filters);
   }
 }

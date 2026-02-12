@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { ISQLMercadoLibreItemsRepository } from 'src/core/adapters/repositories/mercadolibre/itemsId/ISQLMercadoLibreItemsRepository';
-import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { PaginationParams } from 'src/core/entities/common/Pagination';
+import { CursorPaginatedResult } from 'src/core/entities/mercadolibre/itemsId/PaginatedResult';
 import { EntityManager } from 'typeorm';
 
 const BULK_INSERT_BATCH_SIZE = 1000;
@@ -52,9 +52,9 @@ export class SQLMercadoLibreItemsRepository implements ISQLMercadoLibreItemsRepo
   }
 
   async findAll(
-    { limit, offset }: PaginationParams,
+    { limit, lastId }: { limit: number; lastId?: number },
     filters?: { sellerId?: string; status?: string }
-  ): Promise<PaginatedResult<string>> {
+  ): Promise<CursorPaginatedResult<string>> {
     const where: string[] = [];
     const params: any[] = [];
 
@@ -68,39 +68,33 @@ export class SQLMercadoLibreItemsRepository implements ISQLMercadoLibreItemsRepo
       params.push(filters.status);
     }
 
+    if (lastId) {
+      where.push('id > ?');
+      params.push(lastId);
+    }
+
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     const rows = await this.entityManager.query(
       `
-      SELECT item_id
-      FROM mercadolibre_items
-      ${whereClause}
-      ORDER BY id ASC
-      LIMIT ? OFFSET ?
-    `,
-      [...params, limit, offset]
+    SELECT id, item_id
+    FROM mercadolibre_items
+    ${whereClause}
+    ORDER BY id ASC
+    LIMIT ?
+  `,
+      [...params, limit]
     );
 
-    const countResult = await this.entityManager.query(
-      `
-      SELECT COUNT(*) AS total
-      FROM mercadolibre_items
-      ${whereClause}
-    `,
-      params
-    );
-
-    const total = Number(countResult[0].total);
-    const hasNext = offset + limit < total;
+    const items = rows.map((r: any) => r.item_id);
+    const newLastId = rows.length ? rows[rows.length - 1].id : null;
 
     return {
-      items: rows.map((r: any) => r.item_id),
-      total,
+      items,
       limit,
-      offset,
+      lastId: newLastId,
       count: rows.length,
-      hasNext,
-      nextOffset: hasNext ? offset + limit : null
+      hasNext: rows.length === limit
     };
   }
 }

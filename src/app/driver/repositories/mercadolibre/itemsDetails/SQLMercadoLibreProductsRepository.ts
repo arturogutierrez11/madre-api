@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { ISQLMercadoLibreProductsRepository } from 'src/core/adapters/repositories/mercadolibre/itemsDetails/ISQLMercadoLibreProductsRepository';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
+import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 
 const BULK_INSERT_BATCH_SIZE = 200;
 

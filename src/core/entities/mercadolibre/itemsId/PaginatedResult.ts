@@ -7,3 +7,10 @@ export type PaginatedResult<T> = {
   hasNext: boolean;
   nextOffset: number | null;
 };
+export interface CursorPaginatedResult<T> {
+  items: T[];
+  limit: number;
+  count: number;
+  lastId: number | null;
+  hasNext: boolean;
+}
