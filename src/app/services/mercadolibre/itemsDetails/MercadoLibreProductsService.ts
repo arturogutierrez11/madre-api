@@ -29,6 +29,24 @@ export class MercadoLibreProductsService {
   }
 
   /**
+   * UPDATE bulk (solo actualiza, no inserta)
+   */
+  async updateBulk(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<{ updated: number }> {
+    const { sellerId, products } = params;
+
+    if (!products?.length) {
+      return { updated: 0 };
+    }
+
+    const updated = await this.productsRepository.updateFullBulkProducts({
+      sellerId,
+      products
+    });
+
+    return { updated };
+  }
+
+  /**
    * Get paginated products
    */
   async getProducts(params: {

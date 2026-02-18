@@ -8,4 +8,5 @@ export interface ISQLMercadoLibreProductsRepository {
     { limit, offset }: { limit: number; offset: number },
     filters?: { sellerId?: string; status?: string }
   ): Promise<PaginatedResult<any>>;
+  updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
 }

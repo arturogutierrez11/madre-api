@@ -172,4 +172,71 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       .slice(0, 19) // YYYY-MM-DDTHH:mm:ss
       .replace('T', ' ');
   }
+
+  async updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number> {
+    const { sellerId, products } = params;
+
+    if (!products.length) return 0;
+
+    let affected = 0;
+
+    for (let i = 0; i < products.length; i += BULK_INSERT_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_INSERT_BATCH_SIZE);
+
+      for (const p of batch) {
+        const result: any = await this.entityManager.query(
+          `
+        UPDATE mercadolibre_products
+        SET
+          category_id = ?,
+          title = ?,
+          price = ?,
+          currency = ?,
+          stock = ?,
+          sold_quantity = ?,
+          status = ?,
+          \`condition\` = ?,
+          permalink = ?,
+          thumbnail = ?,
+          pictures = ?,
+          seller_sku = ?,
+          brand = ?,
+          warranty = ?,
+          free_shipping = ?,
+          health = ?,
+          last_updated = ?,
+          description = ?,
+          updated_at = NOW()
+        WHERE id = ? AND seller_id = ?
+        `,
+          [
+            p.categoryId ?? null,
+            p.title ?? null,
+            p.price ?? 0,
+            p.currency ?? null,
+            p.stock ?? 0,
+            p.soldQuantity ?? 0,
+            p.status ?? null,
+            p.condition ?? null,
+            p.permalink ?? null,
+            p.thumbnail ?? null,
+            JSON.stringify(p.pictures ?? []),
+            p.sellerSku ?? null,
+            p.brand ?? null,
+            p.warranty ?? null,
+            p.freeShipping ? 1 : 0,
+            p.health ?? 0,
+            this.formatDate(p.lastUpdated),
+            p.description ?? null,
+            p.id,
+            sellerId
+          ]
+        );
+
+        affected += result?.affectedRows ?? 0;
+      }
+    }
+
+    return affected;
+  }
 }
