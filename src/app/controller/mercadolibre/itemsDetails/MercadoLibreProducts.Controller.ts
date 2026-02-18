@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiOkResponse } from '@nestjs/swagger';
+
 import { MercadoLibreProductsService } from 'src/app/services/mercadolibre/itemsDetails/MercadoLibreProductsService';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
@@ -10,56 +11,11 @@ export class MercadoLibreProductsController {
   constructor(private readonly productsService: MercadoLibreProductsService) {}
 
   // ─────────────────────────────────────────────
-  // POST /mercadolibre/products
+  // POST → UPSERT (insert + update)
   // ─────────────────────────────────────────────
   @Post()
   @ApiOperation({
-    summary: 'Guarda productos de MercadoLibre (bulk upsert)',
-    description: `
-Guarda o actualiza productos completos de MercadoLibre.
-
-📌 Características:
-- Inserción masiva (bulk)
-- UPSERT automático
-- Idempotente
-- Soporta actualización completa del producto
-    `
-  })
-  @ApiBody({
-    schema: {
-      example: {
-        sellerId: '1757836744',
-        products: [
-          {
-            id: 'MLA1424563181',
-            title: 'Fabricante Automático Leche Soja',
-            price: 2689000,
-            currency: 'ARS',
-            stock: 5,
-            soldQuantity: 1,
-            status: 'active',
-            condition: 'new',
-            permalink: 'https://...',
-            thumbnail: 'https://...',
-            pictures: ['https://...', 'https://...'],
-            sellerSku: 'B0C3TW3THM',
-            brand: 'Moongiantgo',
-            warranty: '1 mes',
-            freeShipping: true,
-            health: 0.8,
-            lastUpdated: '2026-02-10T17:42:14.636Z',
-            description: 'Descripción completa del producto...'
-          }
-        ]
-      }
-    }
-  })
-  @ApiOkResponse({
-    schema: {
-      example: {
-        inserted: 1
-      }
-    }
+    summary: 'Guarda productos de MercadoLibre (bulk upsert)'
   })
   async saveProductsBulk(
     @Body()
@@ -72,38 +28,66 @@ Guarda o actualiza productos completos de MercadoLibre.
   }
 
   // ─────────────────────────────────────────────
-  // GET /mercadolibre/products
+  // PATCH → UPDATE ONLY
   // ─────────────────────────────────────────────
-  @Get()
+  @Patch()
   @ApiOperation({
-    summary: 'Obtiene productos guardados (paginado)',
+    summary: 'Actualiza productos existentes (bulk update)',
     description: `
-Devuelve productos almacenados en base de datos.
+Actualiza productos existentes sin insertar nuevos.
 
-📌 Soporta:
-- Paginación
-- Filtro por sellerId
-- Filtro por status
+📌 Características:
+- Solo UPDATE
+- No inserta productos nuevos
+- Ideal para actualizar métricas dinámicas:
+  price, stock, sold_quantity, status, health, last_updated, category_id
     `
   })
-  @ApiQuery({ name: 'sellerId', required: true, example: '1757836744' })
-  @ApiQuery({ name: 'limit', required: false, example: 50 })
-  @ApiQuery({ name: 'offset', required: false, example: 0 })
-  @ApiQuery({ name: 'status', required: false, example: 'active' })
-  @ApiOkResponse({
-    description: 'Listado paginado de productos',
+  @ApiBody({
     schema: {
       example: {
-        items: [],
-        total: 1000,
-        limit: 50,
-        offset: 0,
-        count: 50,
-        hasNext: true,
-        nextOffset: 50
+        sellerId: '1757836744',
+        products: [
+          {
+            id: 'MLA1424563181',
+            categoryId: 'MLA1246',
+            price: 1805000,
+            stock: 1,
+            soldQuantity: 0,
+            status: 'active',
+            freeShipping: true,
+            health: 0.95,
+            lastUpdated: '2026-02-14T07:09:35.000Z'
+          }
+        ]
       }
     }
   })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        updated: 1
+      }
+    }
+  })
+  async updateProductsBulk(
+    @Body()
+    body: {
+      sellerId: string;
+      products: MercadoLibreProduct[];
+    }
+  ): Promise<{ updated: number }> {
+    return this.productsService.updateBulk(body);
+  }
+
+  // ─────────────────────────────────────────────
+  // GET paginado
+  // ─────────────────────────────────────────────
+  @Get()
+  @ApiQuery({ name: 'sellerId', required: true })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'offset', required: false })
+  @ApiQuery({ name: 'status', required: false })
   async getProducts(
     @Query('sellerId') sellerId: string,
     @Query('limit') limit = '50',

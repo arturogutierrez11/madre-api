@@ -11,23 +11,43 @@ export class MercadoLibreProductsService {
   ) {}
 
   /**
-   * Guarda o actualiza productos en bulk (UPSERT)
+   * UPSERT bulk (insert + update)
    */
   async saveBulk(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<{ inserted: number }> {
-    if (!params.products?.length) {
+    const { sellerId, products } = params;
+
+    if (!products?.length) {
       return { inserted: 0 };
     }
 
     const inserted = await this.productsRepository.upsertBulkProducts({
-      sellerId: params.sellerId,
-      products: params.products
+      sellerId,
+      products
     });
 
     return { inserted };
   }
 
   /**
-   * Obtiene productos paginados
+   * UPDATE bulk (solo actualiza, no inserta)
+   */
+  async updateBulk(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<{ updated: number }> {
+    const { sellerId, products } = params;
+
+    if (!products?.length) {
+      return { updated: 0 };
+    }
+
+    const updated = await this.productsRepository.updateFullBulkProducts({
+      sellerId,
+      products
+    });
+
+    return { updated };
+  }
+
+  /**
+   * Get paginated products
    */
   async getProducts(params: {
     sellerId: string;
