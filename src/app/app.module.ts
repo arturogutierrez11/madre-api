@@ -9,6 +9,7 @@ import { TokenModule } from './module/mercadolibre/tokens/Token.Module';
 import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLibreItems.Module';
 import { SyncStatesModule } from './module/mercadolibre/sync/SyncStates.module';
 import { MercadoLibreProductsModule } from './module/mercadolibre/itemsDetails/MercadoLibreProducts.Module';
+import { MercadoLibreVisitsModule } from './module/mercadolibre/itemsVisits/MercadoLibreVisits.Module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { MercadoLibreProductsModule } from './module/mercadolibre/itemsDetails/M
     TokenModule,
     MercadoLibreItemsModule,
     SyncStatesModule,
-    MercadoLibreProductsModule
+    MercadoLibreProductsModule,
+    MercadoLibreVisitsModule
   ]
 })
 export class AppModule {}
