@@ -29,6 +29,26 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
     return total;
   }
 
+  async findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]> {
+    const { sellerId, ids } = params;
+
+    if (!ids.length) return [];
+
+    const placeholders = ids.map(() => '?').join(',');
+
+    const rows = await this.entityManager.query(
+      `
+    SELECT *
+    FROM mercadolibre_products
+    WHERE seller_id = ?
+      AND id IN (${placeholders})
+    `,
+      [sellerId, ...ids]
+    );
+
+    return rows;
+  }
+
   private async executeBulkUpsert(sellerId: string, products: MercadoLibreProduct[]): Promise<number> {
     const placeholders = products.map(() => `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).join(',');
     const values: any[] = [];

@@ -101,4 +101,37 @@ Actualiza productos existentes sin insertar nuevos.
       status
     });
   }
+
+  @Post('/search')
+  @ApiOperation({
+    summary: 'Busca múltiples productos por IDs',
+    description: `
+Permite consultar múltiples productos por ID.
+
+Ideal para:
+- Validar existencia
+- Determinar insert vs update
+- Sincronizaciones incrementales
+  `
+  })
+  @ApiBody({
+    schema: {
+      example: {
+        sellerId: '1757836744',
+        ids: ['MLA123', 'MLA456']
+      }
+    }
+  })
+  @ApiOkResponse({
+    description: 'Lista de productos encontrados'
+  })
+  async searchMany(
+    @Body()
+    body: {
+      sellerId: string;
+      ids: string[];
+    }
+  ): Promise<MercadoLibreProduct[]> {
+    return this.productsService.findManyByIds(body);
+  }
 }

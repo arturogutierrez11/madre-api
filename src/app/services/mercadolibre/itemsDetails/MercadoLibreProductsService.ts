@@ -66,4 +66,8 @@ export class MercadoLibreProductsService {
       }
     );
   }
+
+  async findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]> {
+    return this.productsRepository.findManyByIds(params);
+  }
 }

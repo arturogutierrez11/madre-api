@@ -9,4 +9,5 @@ export interface ISQLMercadoLibreProductsRepository {
     filters?: { sellerId?: string; status?: string }
   ): Promise<PaginatedResult<any>>;
   updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
+  findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]>;
 }
