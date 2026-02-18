@@ -30,14 +30,14 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
   }
 
   private async executeBulkUpsert(sellerId: string, products: MercadoLibreProduct[]): Promise<number> {
-    const placeholders = products.map(() => `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).join(',');
-
+    const placeholders = products.map(() => `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).join(',');
     const values: any[] = [];
 
     for (const p of products) {
       values.push(
         p.id,
         sellerId,
+        p.categoryId ?? null,
         p.title ?? null,
         p.price ?? 0,
         p.currency ?? null,
@@ -62,6 +62,7 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       INSERT INTO mercadolibre_products (
         id,
         seller_id,
+        category_id,
         title,
         price,
         currency,
@@ -82,6 +83,7 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       )
       VALUES ${placeholders}
       ON DUPLICATE KEY UPDATE
+        category_id = VALUES(category_id),
         title = VALUES(title),
         price = VALUES(price),
         currency = VALUES(currency),

@@ -32,6 +32,7 @@ Guarda o actualiza productos completos de MercadoLibre.
         products: [
           {
             id: 'MLA1424563181',
+            categoryId: 'MLA1246',
             title: 'Fabricante Automático Leche Soja',
             price: 2689000,
             currency: 'ARS',
