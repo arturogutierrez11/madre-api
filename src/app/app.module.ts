@@ -10,6 +10,7 @@ import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLi
 import { SyncStatesModule } from './module/mercadolibre/sync/SyncStates.module';
 import { MercadoLibreProductsModule } from './module/mercadolibre/itemsDetails/MercadoLibreProducts.Module';
 import { MercadoLibreVisitsModule } from './module/mercadolibre/itemsVisits/MercadoLibreVisits.Module';
+import { MercadoLibreCategoriesModule } from './module/mercadolibre/categories/MercadoLibreCategories.Module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { MercadoLibreVisitsModule } from './module/mercadolibre/itemsVisits/Merc
     MercadoLibreItemsModule,
     SyncStatesModule,
     MercadoLibreProductsModule,
-    MercadoLibreVisitsModule
+    MercadoLibreVisitsModule,
+    MercadoLibreCategoriesModule
   ]
 })
 export class AppModule {}
