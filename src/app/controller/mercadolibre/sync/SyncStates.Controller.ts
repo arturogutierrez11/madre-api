@@ -168,13 +168,13 @@ Marca el proceso como **done**.
     body: {
       process_name: string;
       seller_id: string;
-      last_offset: number;
+      last_offset?: number;
     }
   ) {
     await this.syncStatesService.markDone({
       processName: body.process_name,
       sellerId: body.seller_id,
-      lastOffset: body.last_offset
+      lastOffset: body.last_offset ?? 0
     });
 
     return { status: 'ok' };
