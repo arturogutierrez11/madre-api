@@ -9,20 +9,25 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     @InjectEntityManager()
     private readonly entityManager: EntityManager
   ) {}
-
   async getCategoriesPerformance(params: {
-    categoryId?: string;
+    sellerId: string;
+    categoryIds?: string[];
     orderBy?: 'visits' | 'orders' | 'conversion' | 'revenue';
     direction?: 'asc' | 'desc';
   }) {
-    const { categoryId, orderBy = 'visits', direction = 'desc' } = params;
+    const { sellerId, categoryIds, orderBy = 'visits', direction = 'desc' } = params;
 
     const where: string[] = [];
     const values: any[] = [];
 
-    if (categoryId) {
-      where.push('p.category_id = ?');
-      values.push(categoryId);
+    // 🔐 siempre filtrar por seller
+    where.push('p.seller_id = ?');
+    values.push(sellerId);
+
+    if (categoryIds?.length) {
+      const placeholders = categoryIds.map(() => '?').join(',');
+      where.push(`p.category_id IN (${placeholders})`);
+      values.push(...categoryIds);
     }
 
     const orderMap: Record<string, string> = {
@@ -35,37 +40,37 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     const orderColumn = orderMap[orderBy] ?? 'visits';
     const orderDirection = direction.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    const sql = `SELECT
-  p.category_id AS categoryId,
+    const sql = `
+    SELECT
+      p.category_id AS categoryId,
 
-  COUNT(DISTINCT p.id) AS totalProducts,
+      COUNT(DISTINCT p.id) AS totalProducts,
 
-  COALESCE(SUM(v.total_visits), 0) AS visits,
+      COALESCE(SUM(v.total_visits), 0) AS visits,
+      COALESCE(SUM(p.sold_quantity), 0) AS orders,
+      COALESCE(SUM(p.price * p.sold_quantity), 0) AS revenue,
 
-  COALESCE(SUM(p.sold_quantity), 0) AS orders,
+      CASE 
+        WHEN SUM(p.sold_quantity) > 0
+        THEN SUM(p.price * p.sold_quantity) / SUM(p.sold_quantity)
+        ELSE 0
+      END AS avgTicket,
 
-  COALESCE(SUM(p.price * p.sold_quantity), 0) AS revenue,
+      CASE
+        WHEN SUM(v.total_visits) > 0
+        THEN (SUM(p.sold_quantity) / SUM(v.total_visits)) * 100
+        ELSE 0
+      END AS conversionRate
 
-  CASE 
-    WHEN SUM(p.sold_quantity) > 0
-    THEN SUM(p.price * p.sold_quantity) / SUM(p.sold_quantity)
-    ELSE 0
-  END AS avgTicket,
+    FROM mercadolibre_products p
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
 
-  CASE
-    WHEN SUM(v.total_visits) > 0
-    THEN (SUM(p.sold_quantity) / SUM(v.total_visits)) * 100
-    ELSE 0
-  END AS conversionRate
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
 
-FROM mercadolibre_products p
-LEFT JOIN mercadolibre_item_visits v
-  ON v.item_id = p.id
-
-WHERE p.category_id = ?
-
-GROUP BY p.category_id
-ORDER BY visits ASC `;
+    GROUP BY p.category_id
+    ORDER BY ${orderColumn} ${orderDirection}
+  `;
 
     const rows = await this.entityManager.query(sql, values);
 

@@ -1,7 +1,7 @@
 export interface IAnalyticsCategoriesRepository {
   getCategoriesPerformance(params: {
     sellerId: string;
-    categoryId?: string;
+    categoryIds?: string[];
     orderBy?: 'visits' | 'orders' | 'conversion' | 'revenue';
     direction?: 'asc' | 'desc';
   }): Promise<
@@ -14,6 +14,7 @@ export interface IAnalyticsCategoriesRepository {
       conversionRate: number;
     }[]
   >;
+
   getAvailableCategories(): Promise<
     {
       id: string;
