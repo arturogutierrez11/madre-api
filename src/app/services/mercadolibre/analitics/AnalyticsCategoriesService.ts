@@ -1,13 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IAnalyticsCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/IAnalyticsCategoriesRepository';
 
+import { ISQLMercadoLibreCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/categories/ISQLMercadoLibreCategoriesRepository';
+
 @Injectable()
 export class AnalyticsCategoriesService {
   private readonly SELLER_ID = '1757836744';
 
   constructor(
     @Inject('IAnalyticsCategoriesRepository')
-    private readonly repository: IAnalyticsCategoriesRepository
+    private readonly repository: IAnalyticsCategoriesRepository,
+
+    @Inject('ISQLMercadoLibreCategoriesRepository')
+    private readonly categoriesRepository: ISQLMercadoLibreCategoriesRepository
   ) {}
 
   async getCategoriesPerformance(params: {
@@ -18,14 +23,20 @@ export class AnalyticsCategoriesService {
     const { categoryId, orderBy = 'visits', direction = 'desc' } = params;
 
     const allowedOrderBy = ['visits', 'orders', 'conversion', 'revenue'];
-
     const safeOrderBy = allowedOrderBy.includes(orderBy ?? '') ? orderBy : 'visits';
-
     const safeDirection = direction === 'asc' ? 'asc' : 'desc';
+
+    let categoryIds: string[] | undefined = undefined;
+
+    if (categoryId) {
+      const subtree = await this.categoriesRepository.findSubTree(categoryId);
+
+      categoryIds = subtree.map(c => c.id);
+    }
 
     return this.repository.getCategoriesPerformance({
       sellerId: this.SELLER_ID,
-      categoryId,
+      categoryIds,
       orderBy: safeOrderBy,
       direction: safeDirection
     });
