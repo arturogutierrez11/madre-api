@@ -285,4 +285,39 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       }))
     };
   }
+
+  async getCategoryProducts(params: { sellerId: string; categoryId: string }) {
+    const { sellerId, categoryId } = params;
+
+    const sql = `
+    SELECT
+      p.id,
+      p.title,
+      p.thumbnail,
+      p.price,
+      p.sold_quantity AS soldQuantity,
+      p.seller_sku,
+      COALESCE(v.total_visits, 0) AS visits,
+      (p.price * p.sold_quantity) AS revenue
+    FROM mercadolibre_products p
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
+    WHERE p.seller_id = ?
+      AND p.category_id = ?
+    ORDER BY revenue DESC
+  `;
+
+    const rows = await this.entityManager.query(sql, [sellerId, categoryId]);
+
+    return rows.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      thumbnail: r.thumbnail,
+      seller_sku: r.seller_sku,
+      price: Number(r.price),
+      soldQuantity: Number(r.soldQuantity),
+      visits: Number(r.visits),
+      revenue: Number(r.revenue)
+    }));
+  }
 }

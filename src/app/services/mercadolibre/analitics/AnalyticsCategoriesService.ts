@@ -76,4 +76,11 @@ export class AnalyticsCategoriesService {
       parentId: parentId ?? null
     });
   }
+
+  async getCategoryProducts(categoryId: string) {
+    return this.repository.getCategoryProducts({
+      sellerId: '1757836744', // después lo hacemos dinámico
+      categoryId
+    });
+  }
 }
