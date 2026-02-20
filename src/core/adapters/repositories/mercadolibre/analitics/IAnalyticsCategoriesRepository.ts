@@ -40,4 +40,6 @@ export interface IAnalyticsCategoriesRepository {
   // CHILDREN PERFORMANCE (Hierarchical)
   // ─────────────────────────────────────────────
   getChildrenPerformance(params: { sellerId: string; parentId: string | null });
+
+  getCategoryProducts(params: { sellerId: string; categoryId: string });
 }

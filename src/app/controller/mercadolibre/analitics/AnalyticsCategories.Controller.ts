@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse } from '@nestjs/swagger';
 import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
 
@@ -165,5 +165,10 @@ Incluye toda la rama (hijos y subhijos).
   })
   async getChildrenPerformance(@Query('parentId') parentId?: string) {
     return this.analyticsService.getChildrenPerformance(parentId);
+  }
+
+  @Get(':categoryId/products')
+  async getCategoryProducts(@Param('categoryId') categoryId: string) {
+    return this.analyticsService.getCategoryProducts(categoryId);
   }
 }
