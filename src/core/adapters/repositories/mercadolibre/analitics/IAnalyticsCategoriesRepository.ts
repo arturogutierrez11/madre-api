@@ -55,4 +55,13 @@ export interface IAnalyticsCategoriesRepository {
   addFavorite(productId: string, sellerSku: string);
   removeFavorite(productId: string);
   getFavoriteProductsAnalytics();
+  bulkAddFavorites(filters: {
+    categoryId?: string;
+    brand?: string;
+    minRevenue?: number;
+    minVisits?: number;
+    minOrders?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  });
 }

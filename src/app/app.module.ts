@@ -12,6 +12,8 @@ import { MercadoLibreProductsModule } from './module/mercadolibre/itemsDetails/M
 import { MercadoLibreVisitsModule } from './module/mercadolibre/itemsVisits/MercadoLibreVisits.Module';
 import { MercadoLibreCategoriesModule } from './module/mercadolibre/categories/MercadoLibreCategories.Module';
 import { AnalyticsCategoriesModule } from './module/mercadolibre/analitics/AnalyticsCategories.Module';
+import { AnalyticsModule } from './module/mercadolibre/analitics/AnalyticsProducts.Module';
+import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/AnalyticsBrands.Module';
 
 @Module({
   imports: [
@@ -29,7 +31,9 @@ import { AnalyticsCategoriesModule } from './module/mercadolibre/analitics/Analy
     MercadoLibreProductsModule,
     MercadoLibreVisitsModule,
     MercadoLibreCategoriesModule,
-    AnalyticsCategoriesModule
+    AnalyticsCategoriesModule,
+    AnalyticsModule,
+    AnalyticsBrandsModule
   ]
 })
 export class AppModule {}
