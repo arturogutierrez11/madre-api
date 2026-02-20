@@ -36,10 +36,23 @@ export interface IAnalyticsCategoriesRepository {
     }[]
   >;
 
-  // ─────────────────────────────────────────────
-  // CHILDREN PERFORMANCE (Hierarchical)
-  // ─────────────────────────────────────────────
   getChildrenPerformance(params: { sellerId: string; parentId: string | null });
 
-  getCategoryProducts(params: { sellerId: string; categoryId: string; page?: number; limit?: number });
+  getCategoryProducts(params: {
+    sellerId: string;
+    categoryId: string;
+    page?: number;
+    limit?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    minVisits?: number;
+    maxVisits?: number;
+    minOrders?: number;
+    maxOrders?: number;
+    minRevenue?: number;
+    maxRevenue?: number;
+  });
+  addFavorite(productId: string, sellerSku: string);
+  removeFavorite(productId: string);
+  getFavoriteProductsAnalytics();
 }

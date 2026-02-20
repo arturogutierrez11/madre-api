@@ -77,12 +77,40 @@ export class AnalyticsCategoriesService {
     });
   }
 
-  async getCategoryProducts(categoryId: string, page = 1, limit = 20) {
+  async getCategoryProducts(
+    categoryId: string,
+    page = 1,
+    limit = 20,
+    filters?: {
+      minPrice?: number;
+      maxPrice?: number;
+      minVisits?: number;
+      maxVisits?: number;
+      minOrders?: number;
+      maxOrders?: number;
+      minRevenue?: number;
+      maxRevenue?: number;
+    }
+  ) {
     return this.repository.getCategoryProducts({
       sellerId: '1757836744',
       categoryId,
       page,
-      limit
+      limit,
+      ...filters
     });
+  }
+
+  // ================= FAVORITES =================
+
+  async addFavorite(productId: string, sellerSku: string) {
+    return this.repository.addFavorite(productId, sellerSku);
+  }
+
+  async removeFavorite(productId: string) {
+    return this.repository.removeFavorite(productId);
+  }
+  async getFavoriteProductsAnalytics() {
+    return this.repository.getFavoriteProductsAnalytics();
   }
 }
