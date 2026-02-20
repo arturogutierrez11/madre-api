@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
 
 @ApiTags('Analytics - Categories')
@@ -169,7 +169,7 @@ Incluye toda la rama (hijos y subhijos).
 
   @Get(':categoryId/products')
   @ApiOperation({
-    summary: 'Obtiene productos de una categoría con paginado',
+    summary: 'Obtiene productos de una categoría con paginado y filtros',
     description: `
 Devuelve los productos pertenecientes a una categoría específica.
 
@@ -178,12 +178,11 @@ Devuelve los productos pertenecientes a una categoría específica.
 - Cantidad vendida
 - Visitas
 - Revenue calculado
+- Marketplaces donde está publicado
 
-📦 Soporta paginado mediante:
-- page (número de página)
-- limit (cantidad de registros por página)
-
-La respuesta incluye metadata de paginado.
+📦 Soporta:
+- Paginado
+- Filtros dinámicos por métricas
 `
   })
   @ApiParam({
@@ -192,18 +191,16 @@ La respuesta incluye metadata de paginado.
     description: 'ID de la categoría',
     example: 'MLA438233'
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Número de página (por defecto 1)',
-    example: 1
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Cantidad de registros por página (por defecto 20)',
-    example: 20
-  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'minPrice', required: false, example: 10000 })
+  @ApiQuery({ name: 'maxPrice', required: false, example: 500000 })
+  @ApiQuery({ name: 'minVisits', required: false, example: 10 })
+  @ApiQuery({ name: 'maxVisits', required: false, example: 1000 })
+  @ApiQuery({ name: 'minOrders', required: false, example: 1 })
+  @ApiQuery({ name: 'maxOrders', required: false, example: 100 })
+  @ApiQuery({ name: 'minRevenue', required: false, example: 10000 })
+  @ApiQuery({ name: 'maxRevenue', required: false, example: 1000000 })
   @ApiOkResponse({
     description: 'Listado paginado de productos',
     schema: {
@@ -225,7 +222,17 @@ La respuesta incluye metadata de paginado.
             price: 15000,
             soldQuantity: 12,
             visits: 340,
-            revenue: 180000
+            revenue: 180000,
+            isPublishedElsewhere: true,
+            marketplaces: [
+              {
+                marketplace: 'megatone',
+                price: 14999,
+                stock: 5,
+                status: 'ACTIVE',
+                isActive: 1
+              }
+            ]
           }
         ]
       }
@@ -234,8 +241,61 @@ La respuesta incluye metadata de paginado.
   async getCategoryProducts(
     @Param('categoryId') categoryId: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('minVisits') minVisits?: string,
+    @Query('maxVisits') maxVisits?: string,
+    @Query('minOrders') minOrders?: string,
+    @Query('maxOrders') maxOrders?: string,
+    @Query('minRevenue') minRevenue?: string,
+    @Query('maxRevenue') maxRevenue?: string
   ) {
-    return this.analyticsService.getCategoryProducts(categoryId, page ? Number(page) : 1, limit ? Number(limit) : 20);
+    return this.analyticsService.getCategoryProducts(categoryId, page ? Number(page) : 1, limit ? Number(limit) : 20, {
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      minVisits: minVisits ? Number(minVisits) : undefined,
+      maxVisits: maxVisits ? Number(maxVisits) : undefined,
+      minOrders: minOrders ? Number(minOrders) : undefined,
+      maxOrders: maxOrders ? Number(maxOrders) : undefined,
+      minRevenue: minRevenue ? Number(minRevenue) : undefined,
+      maxRevenue: maxRevenue ? Number(maxRevenue) : undefined
+    });
+  }
+
+  @Post('products/:productId/favorite')
+  @ApiOperation({
+    summary: 'Marca un producto como favorito'
+  })
+  @ApiParam({
+    name: 'productId',
+    required: true,
+    example: 'MLA2044123538'
+  })
+  @ApiBody({
+    schema: {
+      example: {
+        sellerSku: 'B09BNVHQ2C'
+      }
+    }
+  })
+  @ApiOkResponse({
+    schema: {
+      example: { success: true }
+    }
+  })
+  async addFavorite(@Param('productId') productId: string, @Body('sellerSku') sellerSku: string) {
+    return this.analyticsService.addFavorite(productId, sellerSku);
+  }
+
+  @Get('favorites')
+  @ApiOperation({
+    summary: 'Obtiene análisis completo de productos favoritos'
+  })
+  @ApiOkResponse({
+    description: 'Listado de favoritos con métricas y marketplaces'
+  })
+  async getFavoritesAnalytics() {
+    return this.analyticsService.getFavoriteProductsAnalytics();
   }
 }
