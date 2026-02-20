@@ -21,4 +21,18 @@ export interface IAnalyticsCategoriesRepository {
       name: string;
     }[]
   >;
+
+  getParentCategoriesPerformance(params: {
+    sellerId: string;
+    orderBy?: 'visits' | 'orders' | 'revenue';
+    direction?: 'asc' | 'desc';
+  }): Promise<
+    {
+      categoryId: string;
+      categoryName: string;
+      visits: number;
+      orders: number;
+      revenue: number;
+    }[]
+  >;
 }

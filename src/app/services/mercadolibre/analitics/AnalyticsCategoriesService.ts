@@ -42,6 +42,27 @@ export class AnalyticsCategoriesService {
     });
   }
 
+  // ─────────────────────────────────────────────
+  // PARENT CATEGORIES PERFORMANCE (Executive)
+  // ─────────────────────────────────────────────
+  async getParentCategoriesPerformance(params?: {
+    orderBy?: 'visits' | 'orders' | 'revenue';
+    direction?: 'asc' | 'desc';
+  }) {
+    const { orderBy = 'visits', direction = 'desc' } = params ?? {};
+
+    const allowedOrderBy = ['visits', 'orders', 'revenue'];
+    const safeOrderBy = allowedOrderBy.includes(orderBy) ? orderBy : 'visits';
+
+    const safeDirection = direction === 'asc' ? 'asc' : 'desc';
+
+    return this.repository.getParentCategoriesPerformance({
+      sellerId: this.SELLER_ID,
+      orderBy: safeOrderBy,
+      direction: safeDirection
+    });
+  }
+
   async getAvailableCategories() {
     return this.repository.getAvailableCategories();
   }

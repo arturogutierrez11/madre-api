@@ -10,4 +10,5 @@ export interface ISQLMercadoLibreCategoriesRepository {
   findTree(): Promise<MercadoLibreCategory[]>;
 
   findSubTree(categoryId: string): Promise<MercadoLibreCategory[]>;
+  findParents(): Promise<MercadoLibreCategory[]>;
 }

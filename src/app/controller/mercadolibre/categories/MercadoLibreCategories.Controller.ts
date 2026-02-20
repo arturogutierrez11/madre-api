@@ -43,33 +43,14 @@ Se usa para persistir el árbol completo de Meli.
   }
 
   // ─────────────────────────────────────────────
-  // GET - FULL TREE (flat ordered)
+  // GET - PARENTS ONLY (IMPORTANTE: arriba de :id)
   // ─────────────────────────────────────────────
-  @Get()
+  @Get('parents')
   @ApiOperation({
-    summary: 'Obtiene todas las categorías (flat)',
-    description: `
-Devuelve todas las categorías almacenadas.
-Ordenadas por level y name.
-    `
+    summary: 'Obtiene categorías padre (nivel 1)'
   })
-  @ApiOkResponse({
-    type: Array<MercadoLibreCategory>
-  })
-  async getTree(): Promise<MercadoLibreCategory[]> {
-    return this.categoriesService.getTree();
-  }
-
-  // ─────────────────────────────────────────────
-  // GET - BY ID
-  // ─────────────────────────────────────────────
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Obtiene una categoría por ID'
-  })
-  @ApiParam({ name: 'id', example: 'MLA9304' })
-  async getById(@Param('id') id: string): Promise<MercadoLibreCategory | null> {
-    return this.categoriesService.getById(id);
+  async getParents(): Promise<MercadoLibreCategory[]> {
+    return this.categoriesService.getParentCategories();
   }
 
   // ─────────────────────────────────────────────
@@ -90,6 +71,24 @@ Ordenadas por level y name.
   }
 
   // ─────────────────────────────────────────────
+  // GET - FULL TREE (flat ordered)
+  // ─────────────────────────────────────────────
+  @Get()
+  @ApiOperation({
+    summary: 'Obtiene todas las categorías (flat)',
+    description: `
+Devuelve todas las categorías almacenadas.
+Ordenadas por level y path.
+    `
+  })
+  @ApiOkResponse({
+    type: Array<MercadoLibreCategory>
+  })
+  async getTree(): Promise<MercadoLibreCategory[]> {
+    return this.categoriesService.getTree();
+  }
+
+  // ─────────────────────────────────────────────
   // GET - SUBTREE
   // ─────────────────────────────────────────────
   @Get(':id/subtree')
@@ -99,5 +98,17 @@ Ordenadas por level y name.
   @ApiParam({ name: 'id', example: 'MLA9304' })
   async getSubTree(@Param('id') id: string): Promise<MercadoLibreCategory[]> {
     return this.categoriesService.getSubTree(id);
+  }
+
+  // ─────────────────────────────────────────────
+  // GET - BY ID (SIEMPRE AL FINAL)
+  // ─────────────────────────────────────────────
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Obtiene una categoría por ID'
+  })
+  @ApiParam({ name: 'id', example: 'MLA9304' })
+  async getById(@Param('id') id: string): Promise<MercadoLibreCategory | null> {
+    return this.categoriesService.getById(id);
   }
 }
