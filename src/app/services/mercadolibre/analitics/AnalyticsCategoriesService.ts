@@ -77,10 +77,12 @@ export class AnalyticsCategoriesService {
     });
   }
 
-  async getCategoryProducts(categoryId: string) {
+  async getCategoryProducts(categoryId: string, page = 1, limit = 20) {
     return this.repository.getCategoryProducts({
-      sellerId: '1757836744', // después lo hacemos dinámico
-      categoryId
+      sellerId: '1757836744',
+      categoryId,
+      page,
+      limit
     });
   }
 }
