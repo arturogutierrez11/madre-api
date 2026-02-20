@@ -296,7 +296,14 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     SELECT COUNT(*) as total
     FROM mercadolibre_products p
     WHERE p.seller_id = ?
-      AND p.category_id = ?
+      AND p.category_id IN (
+        SELECT c.id
+        FROM mercadolibre_categories c
+        WHERE c.path LIKE CONCAT(
+          (SELECT path FROM mercadolibre_categories WHERE id = ?),
+          '%'
+        )
+      )
   `;
 
     const countResult = await this.entityManager.query(countSql, [sellerId, categoryId]);
@@ -319,7 +326,14 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     LEFT JOIN mercadolibre_item_visits v
       ON v.item_id = p.id
     WHERE p.seller_id = ?
-      AND p.category_id = ?
+      AND p.category_id IN (
+        SELECT c.id
+        FROM mercadolibre_categories c
+        WHERE c.path LIKE CONCAT(
+          (SELECT path FROM mercadolibre_categories WHERE id = ?),
+          '%'
+        )
+      )
     ORDER BY revenue DESC
     LIMIT ?
     OFFSET ?
