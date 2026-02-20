@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiParam } from '@nestjs/swagger';
 import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
 
 @ApiTags('Analytics - Categories')
@@ -168,7 +168,74 @@ Incluye toda la rama (hijos y subhijos).
   }
 
   @Get(':categoryId/products')
-  async getCategoryProducts(@Param('categoryId') categoryId: string) {
-    return this.analyticsService.getCategoryProducts(categoryId);
+  @ApiOperation({
+    summary: 'Obtiene productos de una categoría con paginado',
+    description: `
+Devuelve los productos pertenecientes a una categoría específica.
+
+📊 Incluye:
+- Precio
+- Cantidad vendida
+- Visitas
+- Revenue calculado
+
+📦 Soporta paginado mediante:
+- page (número de página)
+- limit (cantidad de registros por página)
+
+La respuesta incluye metadata de paginado.
+`
+  })
+  @ApiParam({
+    name: 'categoryId',
+    required: true,
+    description: 'ID de la categoría',
+    example: 'MLA438233'
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Número de página (por defecto 1)',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Cantidad de registros por página (por defecto 20)',
+    example: 20
+  })
+  @ApiOkResponse({
+    description: 'Listado paginado de productos',
+    schema: {
+      example: {
+        meta: {
+          page: 1,
+          limit: 20,
+          total: 134,
+          totalPages: 7,
+          hasNext: true,
+          hasPrev: false
+        },
+        items: [
+          {
+            id: 'MLA123456',
+            title: 'Producto ejemplo',
+            thumbnail: 'https://...',
+            seller_sku: 'SKU-123',
+            price: 15000,
+            soldQuantity: 12,
+            visits: 340,
+            revenue: 180000
+          }
+        ]
+      }
+    }
+  })
+  async getCategoryProducts(
+    @Param('categoryId') categoryId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.analyticsService.getCategoryProducts(categoryId, page ? Number(page) : 1, limit ? Number(limit) : 20);
   }
 }

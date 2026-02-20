@@ -286,10 +286,26 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     };
   }
 
-  async getCategoryProducts(params: { sellerId: string; categoryId: string }) {
-    const { sellerId, categoryId } = params;
+  async getCategoryProducts(params: { sellerId: string; categoryId: string; page?: number; limit?: number }) {
+    const { sellerId, categoryId, page = 1, limit = 20 } = params;
 
-    const sql = `
+    const offset = (page - 1) * limit;
+
+    /* ================= COUNT ================= */
+    const countSql = `
+    SELECT COUNT(*) as total
+    FROM mercadolibre_products p
+    WHERE p.seller_id = ?
+      AND p.category_id = ?
+  `;
+
+    const countResult = await this.entityManager.query(countSql, [sellerId, categoryId]);
+
+    const total = Number(countResult[0].total);
+    const totalPages = Math.ceil(total / limit);
+
+    /* ================= DATA ================= */
+    const dataSql = `
     SELECT
       p.id,
       p.title,
@@ -305,11 +321,13 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     WHERE p.seller_id = ?
       AND p.category_id = ?
     ORDER BY revenue DESC
+    LIMIT ?
+    OFFSET ?
   `;
 
-    const rows = await this.entityManager.query(sql, [sellerId, categoryId]);
+    const rows = await this.entityManager.query(dataSql, [sellerId, categoryId, limit, offset]);
 
-    return rows.map((r: any) => ({
+    const items = rows.map((r: any) => ({
       id: r.id,
       title: r.title,
       thumbnail: r.thumbnail,
@@ -319,5 +337,17 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       visits: Number(r.visits),
       revenue: Number(r.revenue)
     }));
+
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      items
+    };
   }
 }

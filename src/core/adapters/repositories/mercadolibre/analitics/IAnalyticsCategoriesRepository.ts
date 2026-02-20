@@ -41,5 +41,5 @@ export interface IAnalyticsCategoriesRepository {
   // ─────────────────────────────────────────────
   getChildrenPerformance(params: { sellerId: string; parentId: string | null });
 
-  getCategoryProducts(params: { sellerId: string; categoryId: string });
+  getCategoryProducts(params: { sellerId: string; categoryId: string; page?: number; limit?: number });
 }
