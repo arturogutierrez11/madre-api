@@ -103,4 +103,62 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       name: r.name
     }));
   }
+
+  // ─────────────────────────────────────────────
+  // PARENT CATEGORIES PERFORMANCE (Executive View)
+  // ─────────────────────────────────────────────
+  async getParentCategoriesPerformance(params: {
+    sellerId: string;
+    orderBy?: 'visits' | 'orders' | 'revenue';
+    direction?: 'asc' | 'desc';
+  }) {
+    const { sellerId, orderBy = 'visits', direction = 'desc' } = params;
+
+    const orderMap: Record<string, string> = {
+      visits: 'visits',
+      orders: 'orders',
+      revenue: 'revenue'
+    };
+
+    const orderColumn = orderMap[orderBy] ?? 'visits';
+    const orderDirection = direction.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    const sql = `
+    SELECT
+      parent.id AS categoryId,
+      parent.name AS categoryName,
+
+      COALESCE(SUM(v.total_visits), 0) AS visits,
+      COALESCE(SUM(p.sold_quantity), 0) AS orders,
+      COALESCE(SUM(p.price * p.sold_quantity), 0) AS revenue
+
+    FROM mercadolibre_categories parent
+
+    JOIN mercadolibre_categories child
+      ON child.path LIKE CONCAT(parent.id, '%')
+
+    JOIN mercadolibre_products p
+      ON p.category_id = child.id
+
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
+
+    WHERE parent.parent_id IS NULL
+      AND p.seller_id = ?
+
+    GROUP BY parent.id, parent.name
+
+    ORDER BY ${orderColumn} ${orderDirection}
+  `;
+
+    const rows = await this.entityManager.query(sql, [sellerId]);
+
+    return rows.map((r: any) => ({
+      categoryId: r.categoryId,
+      categoryName: r.categoryName,
+      visits: Number(r.visits),
+      orders: Number(r.orders),
+      revenue: Number(r.revenue)
+    }));
+  }
 }

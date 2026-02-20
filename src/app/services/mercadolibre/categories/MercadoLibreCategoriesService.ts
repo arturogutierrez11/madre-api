@@ -57,4 +57,8 @@ export class MercadoLibreCategoriesService {
 
     return this.categoriesRepository.findSubTree(categoryId);
   }
+
+  async getParentCategories(): Promise<MercadoLibreCategory[]> {
+    return this.categoriesRepository.findParents();
+  }
 }

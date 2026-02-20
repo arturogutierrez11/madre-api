@@ -103,4 +103,50 @@ Ideal para:
   async getAvailableCategories() {
     return this.analyticsService.getAvailableCategories();
   }
+
+  // ─────────────────────────────────────────────
+  // GET - PARENT CATEGORIES PERFORMANCE (Executive)
+  // ─────────────────────────────────────────────
+  @Get('parents-performance')
+  @ApiOperation({
+    summary: 'Obtiene performance agregada por categorías padre',
+    description: `
+Devuelve métricas ejecutivas agregadas por categoría padre.
+Incluye toda la rama (hijos y subhijos).
+`
+  })
+  @ApiQuery({
+    name: 'orderBy',
+    required: false,
+    enum: ['visits', 'orders', 'revenue'],
+    example: 'visits'
+  })
+  @ApiQuery({
+    name: 'direction',
+    required: false,
+    enum: ['asc', 'desc'],
+    example: 'desc'
+  })
+  @ApiOkResponse({
+    schema: {
+      example: [
+        {
+          categoryId: 'MLA5725',
+          categoryName: 'Accesorios para Vehículos',
+          visits: 240000,
+          orders: 530,
+          revenue: 82000000
+        }
+      ]
+    }
+  })
+  async getParentCategoriesPerformance(
+    @Query('orderBy') orderBy?: 'visits' | 'orders' | 'revenue',
+    @Query('direction') direction?: 'asc' | 'desc'
+  ) {
+    return this.analyticsService.getParentCategoriesPerformance({
+      orderBy,
+      direction
+    });
+  }
 }

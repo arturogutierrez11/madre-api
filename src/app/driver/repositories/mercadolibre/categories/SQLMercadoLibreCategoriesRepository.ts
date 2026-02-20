@@ -133,6 +133,19 @@ export class SQLMercadoLibreCategoriesRepository implements ISQLMercadoLibreCate
 
     return rows.map((r: any) => this.mapRow(r));
   }
+  async findParents(): Promise<MercadoLibreCategory[]> {
+    const rows = await this.entityManager.query(
+      `
+    SELECT *
+    FROM mercadolibre_categories
+    WHERE level = ?
+    ORDER BY name ASC
+    `,
+      ['1']
+    );
+
+    return rows.map((r: any) => this.mapRow(r));
+  }
 
   // ─────────────────────────────────────────────
   // MAP ROW
