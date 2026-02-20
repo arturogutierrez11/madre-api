@@ -66,4 +66,14 @@ export class AnalyticsCategoriesService {
   async getAvailableCategories() {
     return this.repository.getAvailableCategories();
   }
+
+  // ─────────────────────────────────────────────
+  // GET CHILDREN PERFORMANCE
+  // ─────────────────────────────────────────────
+  async getChildrenPerformance(parentId?: string) {
+    return this.repository.getChildrenPerformance({
+      sellerId: this.SELLER_ID,
+      parentId: parentId ?? null
+    });
+  }
 }

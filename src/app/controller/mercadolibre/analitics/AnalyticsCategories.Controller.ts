@@ -149,4 +149,21 @@ Incluye toda la rama (hijos y subhijos).
       direction
     });
   }
+
+  // ─────────────────────────────────────────────
+  // GET - CHILDREN PERFORMANCE (Hierarchical)
+  // ─────────────────────────────────────────────
+  @Get('categories/children')
+  @ApiOperation({
+    summary: 'Obtiene categorías hijas directas con métricas (modo jerárquico)'
+  })
+  @ApiQuery({
+    name: 'parentId',
+    required: false,
+    description: 'Si es null → devuelve categorías padre (nivel 1)',
+    example: 'MLA1000'
+  })
+  async getChildrenPerformance(@Query('parentId') parentId?: string) {
+    return this.analyticsService.getChildrenPerformance(parentId);
+  }
 }

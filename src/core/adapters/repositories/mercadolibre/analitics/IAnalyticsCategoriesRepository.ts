@@ -35,4 +35,9 @@ export interface IAnalyticsCategoriesRepository {
       revenue: number;
     }[]
   >;
+
+  // ─────────────────────────────────────────────
+  // CHILDREN PERFORMANCE (Hierarchical)
+  // ─────────────────────────────────────────────
+  getChildrenPerformance(params: { sellerId: string; parentId: string | null });
 }
