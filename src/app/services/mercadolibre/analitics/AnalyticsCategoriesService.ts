@@ -113,4 +113,15 @@ export class AnalyticsCategoriesService {
   async getFavoriteProductsAnalytics() {
     return this.repository.getFavoriteProductsAnalytics();
   }
+  async execute(filters: {
+    categoryId?: string;
+    brand?: string;
+    minRevenue?: number;
+    minVisits?: number;
+    minOrders?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  }) {
+    return this.repository.bulkAddFavorites(filters);
+  }
 }

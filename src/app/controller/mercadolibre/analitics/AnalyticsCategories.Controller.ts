@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
+import { BulkAddFavoritesDto } from './dto/BulkAddFavoritesDto';
 
 @ApiTags('Analytics - Categories')
 @Controller('analytics/categories')
@@ -297,5 +298,15 @@ Devuelve los productos pertenecientes a una categoría específica.
   })
   async getFavoritesAnalytics() {
     return this.analyticsService.getFavoriteProductsAnalytics();
+  }
+
+  @Delete(':productId/favorite')
+  async remove(@Param('productId') productId: string) {
+    return this.analyticsService.removeFavorite(productId);
+  }
+
+  @Post('favorites/bulk')
+  async bulkAddFavoritesHandler(@Body() body: BulkAddFavoritesDto) {
+    return this.analyticsService.execute(body);
   }
 }
