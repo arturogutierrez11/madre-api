@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse } from '@nestjs/swagger'
 import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
 
 @ApiTags('Analytics - Categories')
-@Controller('/analytics/categories')
+@Controller('analytics/categories')
 export class AnalyticsCategoriesController {
   constructor(private readonly analyticsService: AnalyticsCategoriesService) {}
 
@@ -153,7 +153,7 @@ Incluye toda la rama (hijos y subhijos).
   // ─────────────────────────────────────────────
   // GET - CHILDREN PERFORMANCE (Hierarchical)
   // ─────────────────────────────────────────────
-  @Get('categories/children')
+  @Get('children')
   @ApiOperation({
     summary: 'Obtiene categorías hijas directas con métricas (modo jerárquico)'
   })
