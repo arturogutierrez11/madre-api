@@ -49,7 +49,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     const where: string[] = [];
     const values: any[] = [];
 
-    // 🔵 BRAND FILTER
+    /* ================= FILTERS ================= */
+
     if (brand) {
       where.push(`p.brand = ?`);
       values.push(brand);
@@ -99,12 +100,12 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     /* ================= COUNT ================= */
 
     const countSql = `
-    SELECT COUNT(*) as total
-    FROM mercadolibre_products p
-    LEFT JOIN mercadolibre_item_visits v
-      ON v.item_id = p.id
-    ${whereClause}
-  `;
+      SELECT COUNT(*) as total
+      FROM mercadolibre_products p
+      LEFT JOIN mercadolibre_item_visits v
+        ON v.item_id = p.id
+      ${whereClause}
+    `;
 
     const countResult = await this.entityManager.query(countSql, values);
 
@@ -114,26 +115,27 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     /* ================= DATA ================= */
 
     const dataSql = `
-    SELECT
-      p.id,
-      p.title,
-      p.thumbnail,
-      p.price,
-      p.sold_quantity AS soldQuantity,
-      COALESCE(v.total_visits, 0) AS visits
+      SELECT
+        p.id,
+        p.title,
+        p.thumbnail,
+        p.price,
+        p.seller_sku,
+        p.sold_quantity AS soldQuantity,
+        COALESCE(v.total_visits, 0) AS visits
 
-    FROM mercadolibre_products p
+      FROM mercadolibre_products p
 
-    LEFT JOIN mercadolibre_item_visits v
-      ON v.item_id = p.id
+      LEFT JOIN mercadolibre_item_visits v
+        ON v.item_id = p.id
 
-    ${whereClause}
+      ${whereClause}
 
-    ORDER BY ${orderColumn} ${orderDirection}
+      ORDER BY ${orderColumn} ${orderDirection}
 
-    LIMIT ?
-    OFFSET ?
-  `;
+      LIMIT ?
+      OFFSET ?
+    `;
 
     const rows = await this.entityManager.query(dataSql, [...values, safeLimit, offset]);
 
@@ -151,6 +153,7 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
         title: r.title,
         thumbnail: r.thumbnail,
         price: Number(r.price),
+        seller_sku: r.seller_sku, // 🔥 NUEVO
         soldQuantity: Number(r.soldQuantity),
         visits: Number(r.visits)
       }))
