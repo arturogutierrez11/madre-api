@@ -100,28 +100,4 @@ export class AnalyticsCategoriesService {
       ...filters
     });
   }
-
-  // ================= FAVORITES =================
-
-  async addFavorite(productId: string, sellerSku: string) {
-    return this.repository.addFavorite(productId, sellerSku);
-  }
-
-  async removeFavorite(productId: string) {
-    return this.repository.removeFavorite(productId);
-  }
-  async getFavoriteProductsAnalytics() {
-    return this.repository.getFavoriteProductsAnalytics();
-  }
-  async execute(filters: {
-    categoryId?: string;
-    brand?: string;
-    minRevenue?: number;
-    minVisits?: number;
-    minOrders?: number;
-    minPrice?: number;
-    maxPrice?: number;
-  }) {
-    return this.repository.bulkAddFavorites(filters);
-  }
 }

@@ -14,6 +14,7 @@ import { MercadoLibreCategoriesModule } from './module/mercadolibre/categories/M
 import { AnalyticsCategoriesModule } from './module/mercadolibre/analitics/AnalyticsCategories.Module';
 import { AnalyticsModule } from './module/mercadolibre/analitics/AnalyticsProducts.Module';
 import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/AnalyticsBrands.Module';
+import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/AnalitycsFavorites.Module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/Analytics
     MercadoLibreCategoriesModule,
     AnalyticsCategoriesModule,
     AnalyticsModule,
-    AnalyticsBrandsModule
+    AnalyticsBrandsModule,
+    MarketplaceFavoritesModule
   ]
 })
 export class AppModule {}

@@ -3,7 +3,7 @@ export interface IAnalyticsProductsRepository {
     page?: number;
     limit?: number;
 
-    brand?: string; // 👈 agregado
+    brand?: string;
 
     minPrice?: number;
     maxPrice?: number;
@@ -32,6 +32,7 @@ export interface IAnalyticsProductsRepository {
       price: number;
       soldQuantity: number;
       visits: number;
+      seller_sku: string;
     }[];
   }>;
 }
