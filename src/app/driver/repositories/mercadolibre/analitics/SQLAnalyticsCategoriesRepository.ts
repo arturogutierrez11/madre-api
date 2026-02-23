@@ -400,51 +400,68 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     const total = Number(countResult[0].total);
     const totalPages = Math.ceil(total / limit);
 
-    /* ================= DATA ================= */
-
     const dataSql = `
-  SELECT
-    p.id,
-    p.title,
-    p.thumbnail,
-    p.price,
-    p.sold_quantity AS soldQuantity,
-    p.seller_sku,
-    COALESCE(v.total_visits, 0) AS visits,
-    (p.price * p.sold_quantity) AS revenue,
-
-    CASE
-      WHEN sp.product_id IS NULL THEN 0
-      ELSE 1
-    END AS isFavorite
-
-  FROM mercadolibre_products p
-
-  LEFT JOIN mercadolibre_item_visits v
-    ON v.item_id = p.id
-
-  /* EXCLUIR PUBLICADOS */
-  LEFT JOIN (
-    SELECT seller_sku
-    FROM product_sync_items
-    GROUP BY seller_sku
-  ) psi
-    ON psi.seller_sku COLLATE utf8mb4_unicode_ci
-       = p.seller_sku COLLATE utf8mb4_unicode_ci
+SELECT
+  p.id,
+  p.title,
+  p.thumbnail,
+  p.price,
+  p.sold_quantity AS soldQuantity,
+  p.seller_sku,
+  COALESCE(v.total_visits, 0) AS visits,
+  (p.price * p.sold_quantity) AS revenue,
 
   /* FAVORITOS */
-  LEFT JOIN favorite_products sp
-    ON sp.product_id = p.id
+  CASE
+    WHEN EXISTS (
+      SELECT 1
+      FROM marketplace_favorite_products mfp
+      WHERE mfp.product_id = p.id
+    )
+    THEN 1
+    ELSE 0
+  END AS isFavorite,
 
-  ${whereClause}
-  ${whereClause ? 'AND' : 'WHERE'} psi.seller_sku IS NULL
+  /* PUBLICADOS */
+  CASE
+    WHEN EXISTS (
+      SELECT 1
+      FROM product_sync_items psi
+      WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+            = p.seller_sku COLLATE utf8mb4_unicode_ci
+        AND psi.is_active = 1
+    )
+    THEN 1
+    ELSE 0
+  END AS isPublished,
 
-  ORDER BY revenue DESC
+  (
+    SELECT JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'marketplace', psi.marketplace,
+        'status', psi.status,
+        'price', psi.price,
+        'stock', psi.stock,
+        'isActive', psi.is_active
+      )
+    )
+    FROM product_sync_items psi
+    WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+          = p.seller_sku COLLATE utf8mb4_unicode_ci
+      AND psi.is_active = 1
+  ) AS publishedMarketplaces
 
-  LIMIT ?
-  OFFSET ?
+FROM mercadolibre_products p
+
+LEFT JOIN mercadolibre_item_visits v
+  ON v.item_id = p.id
+
+${whereClause}
+
+ORDER BY revenue DESC
+LIMIT ?
+OFFSET ?
 `;
-
     const rows = await this.entityManager.query(dataSql, [...values, limit, offset]);
 
     const items = rows.map((r: any) => ({
@@ -456,7 +473,14 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       soldQuantity: Number(r.soldQuantity),
       visits: Number(r.visits),
       revenue: Number(r.revenue),
-      isFavorite: Boolean(r.isFavorite)
+
+      isFavorite: Boolean(r.isFavorite),
+      isPublished: Boolean(r.isPublished),
+
+      publishedMarketplaces:
+        typeof r.publishedMarketplaces === 'string'
+          ? JSON.parse(r.publishedMarketplaces)
+          : (r.publishedMarketplaces ?? [])
     }));
 
     return {
