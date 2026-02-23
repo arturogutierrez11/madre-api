@@ -90,10 +90,10 @@ export class AnalyticsCategoriesService {
       maxOrders?: number;
       minRevenue?: number;
       maxRevenue?: number;
+      excludeMarketplace?: string[];
     }
   ) {
     return this.repository.getCategoryProducts({
-      sellerId: '1757836744',
       categoryId,
       page,
       limit,

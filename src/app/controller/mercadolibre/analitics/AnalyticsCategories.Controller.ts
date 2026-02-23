@@ -170,26 +170,11 @@ Incluye toda la rama (hijos y subhijos).
 
   @Get(':categoryId/products')
   @ApiOperation({
-    summary: 'Obtiene productos de una categoría con paginado y filtros',
-    description: `
-Devuelve los productos pertenecientes a una categoría específica.
-
-📊 Incluye:
-- Precio
-- Cantidad vendida
-- Visitas
-- Revenue calculado
-- Marketplaces donde está publicado
-
-📦 Soporta:
-- Paginado
-- Filtros dinámicos por métricas
-`
+    summary: 'Obtiene productos de una categoría con paginado y filtros'
   })
   @ApiParam({
     name: 'categoryId',
     required: true,
-    description: 'ID de la categoría',
     example: 'MLA438233'
   })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -202,42 +187,17 @@ Devuelve los productos pertenecientes a una categoría específica.
   @ApiQuery({ name: 'maxOrders', required: false, example: 100 })
   @ApiQuery({ name: 'minRevenue', required: false, example: 10000 })
   @ApiQuery({ name: 'maxRevenue', required: false, example: 1000000 })
-  @ApiOkResponse({
-    description: 'Listado paginado de productos',
-    schema: {
-      example: {
-        meta: {
-          page: 1,
-          limit: 20,
-          total: 134,
-          totalPages: 7,
-          hasNext: true,
-          hasPrev: false
-        },
-        items: [
-          {
-            id: 'MLA123456',
-            title: 'Producto ejemplo',
-            thumbnail: 'https://...',
-            seller_sku: 'SKU-123',
-            price: 15000,
-            soldQuantity: 12,
-            visits: 340,
-            revenue: 180000,
-            isPublishedElsewhere: true,
-            marketplaces: [
-              {
-                marketplace: 'megatone',
-                price: 14999,
-                stock: 5,
-                status: 'ACTIVE',
-                isActive: 1
-              }
-            ]
-          }
-        ]
-      }
-    }
+  @ApiQuery({
+    name: 'excludeMarketplace',
+    required: false,
+    example: 'megatone,oncity',
+    description: `
+Excluye productos que estén publicados en uno o más marketplaces.
+
+📌 Separar múltiples marketplaces con coma.
+Ejemplo:
+?excludeMarketplace=megatone,oncity
+`
   })
   async getCategoryProducts(
     @Param('categoryId') categoryId: string,
@@ -250,7 +210,8 @@ Devuelve los productos pertenecientes a una categoría específica.
     @Query('minOrders') minOrders?: string,
     @Query('maxOrders') maxOrders?: string,
     @Query('minRevenue') minRevenue?: string,
-    @Query('maxRevenue') maxRevenue?: string
+    @Query('maxRevenue') maxRevenue?: string,
+    @Query('excludeMarketplace') excludeMarketplace?: string
   ) {
     return this.analyticsService.getCategoryProducts(categoryId, page ? Number(page) : 1, limit ? Number(limit) : 20, {
       minPrice: minPrice ? Number(minPrice) : undefined,
@@ -260,7 +221,9 @@ Devuelve los productos pertenecientes a una categoría específica.
       minOrders: minOrders ? Number(minOrders) : undefined,
       maxOrders: maxOrders ? Number(maxOrders) : undefined,
       minRevenue: minRevenue ? Number(minRevenue) : undefined,
-      maxRevenue: maxRevenue ? Number(maxRevenue) : undefined
+      maxRevenue: maxRevenue ? Number(maxRevenue) : undefined,
+
+      excludeMarketplace: excludeMarketplace ? excludeMarketplace.split(',').map(m => m.trim()) : undefined
     });
   }
 }

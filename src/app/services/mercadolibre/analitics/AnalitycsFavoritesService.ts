@@ -27,4 +27,13 @@ export class MarketplaceFavoritesService {
   async getFavorites(marketplaceId: number) {
     return this.repository.getFavorites(marketplaceId);
   }
+  async addFavoritesBulk(marketplaceIds: number[], items: { productId: string; sellerSku: string }[]) {
+    await Promise.all(marketplaceIds.map(id => this.repository.addFavoritesBulk(id, items)));
+
+    return {
+      success: true,
+      marketplacesAffected: marketplaceIds.length,
+      itemsPerMarketplace: items.length
+    };
+  }
 }

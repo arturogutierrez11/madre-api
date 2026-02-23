@@ -297,6 +297,7 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     maxOrders?: number;
     minRevenue?: number;
     maxRevenue?: number;
+    excludeMarketplace?: string[]; // 👈 ARRAY
   }) {
     const {
       categoryId,
@@ -309,17 +310,17 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       minOrders,
       maxOrders,
       minRevenue,
-      maxRevenue
+      maxRevenue,
+      excludeMarketplace
     } = params;
 
     const offset = (page - 1) * limit;
 
-    /* ================= WHERE DINÁMICO ================= */
-
     const where: string[] = [];
     const values: any[] = [];
 
-    // Categoría + subcategorías
+    /* ================= CATEGORÍA + SUBÁRBOL ================= */
+
     where.push(`
     p.category_id IN (
       SELECT c.id
@@ -331,6 +332,8 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     )
   `);
     values.push(categoryId);
+
+    /* ================= FILTROS MÉTRICOS ================= */
 
     if (minPrice !== undefined) {
       where.push(`p.price >= ?`);
@@ -372,6 +375,25 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
       values.push(maxRevenue);
     }
 
+    /* ================= EXCLUIR MARKETPLACES ================= */
+
+    if (excludeMarketplace?.length) {
+      const placeholders = excludeMarketplace.map(() => '?').join(',');
+
+      where.push(`
+      NOT EXISTS (
+        SELECT 1
+        FROM product_sync_items psi_filter
+        WHERE psi_filter.seller_sku COLLATE utf8mb4_unicode_ci
+              = p.seller_sku COLLATE utf8mb4_unicode_ci
+          AND psi_filter.marketplace IN (${placeholders})
+          AND psi_filter.is_active = 1
+      )
+    `);
+
+      values.push(...excludeMarketplace);
+    }
+
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     /* ================= COUNT ================= */
@@ -379,89 +401,77 @@ export class SQLAnalyticsCategoriesRepository implements IAnalyticsCategoriesRep
     const countSql = `
     SELECT COUNT(*) as total
     FROM mercadolibre_products p
-
     LEFT JOIN mercadolibre_item_visits v
       ON v.item_id = p.id
-
-    /* EXCLUIR PUBLICADOS */
-    LEFT JOIN (
-      SELECT seller_sku
-      FROM product_sync_items
-      GROUP BY seller_sku
-    ) psi
-      ON psi.seller_sku COLLATE utf8mb4_unicode_ci
-         = p.seller_sku COLLATE utf8mb4_unicode_ci
-
     ${whereClause}
-    ${whereClause ? 'AND' : 'WHERE'} psi.seller_sku IS NULL
   `;
 
     const countResult = await this.entityManager.query(countSql, values);
-    const total = Number(countResult[0].total);
+    const total = Number(countResult[0]?.total ?? 0);
     const totalPages = Math.ceil(total / limit);
 
+    /* ================= DATA ================= */
+
     const dataSql = `
-SELECT
-  p.id,
-  p.title,
-  p.thumbnail,
-  p.price,
-  p.sold_quantity AS soldQuantity,
-  p.seller_sku,
-  COALESCE(v.total_visits, 0) AS visits,
-  (p.price * p.sold_quantity) AS revenue,
+    SELECT
+      p.id,
+      p.title,
+      p.thumbnail,
+      p.price,
+      p.sold_quantity AS soldQuantity,
+      p.seller_sku,
+      COALESCE(v.total_visits, 0) AS visits,
+      (p.price * p.sold_quantity) AS revenue,
 
-  /* FAVORITOS */
-  CASE
-    WHEN EXISTS (
-      SELECT 1
-      FROM marketplace_favorite_products mfp
-      WHERE mfp.product_id = p.id
-    )
-    THEN 1
-    ELSE 0
-  END AS isFavorite,
+      /* FAVORITOS */
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM marketplace_favorite_products mfp
+          WHERE mfp.product_id = p.id
+        )
+        THEN 1 ELSE 0
+      END AS isFavorite,
 
-  /* PUBLICADOS */
-  CASE
-    WHEN EXISTS (
-      SELECT 1
-      FROM product_sync_items psi
-      WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
-            = p.seller_sku COLLATE utf8mb4_unicode_ci
-        AND psi.is_active = 1
-    )
-    THEN 1
-    ELSE 0
-  END AS isPublished,
+      /* PUBLICADOS */
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM product_sync_items psi
+          WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+                = p.seller_sku COLLATE utf8mb4_unicode_ci
+            AND psi.is_active = 1
+        )
+        THEN 1 ELSE 0
+      END AS isPublished,
 
-  (
-    SELECT JSON_ARRAYAGG(
-      JSON_OBJECT(
-        'marketplace', psi.marketplace,
-        'status', psi.status,
-        'price', psi.price,
-        'stock', psi.stock,
-        'isActive', psi.is_active
-      )
-    )
-    FROM product_sync_items psi
-    WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
-          = p.seller_sku COLLATE utf8mb4_unicode_ci
-      AND psi.is_active = 1
-  ) AS publishedMarketplaces
+      (
+        SELECT JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'marketplace', psi.marketplace,
+            'status', psi.status,
+            'price', psi.price,
+            'stock', psi.stock,
+            'isActive', psi.is_active
+          )
+        )
+        FROM product_sync_items psi
+        WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+              = p.seller_sku COLLATE utf8mb4_unicode_ci
+          AND psi.is_active = 1
+      ) AS publishedMarketplaces
 
-FROM mercadolibre_products p
+    FROM mercadolibre_products p
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
 
-LEFT JOIN mercadolibre_item_visits v
-  ON v.item_id = p.id
+    ${whereClause}
 
-${whereClause}
+    ORDER BY revenue DESC
+    LIMIT ?
+    OFFSET ?
+  `;
 
-ORDER BY revenue DESC
-LIMIT ?
-OFFSET ?
-`;
     const rows = await this.entityManager.query(dataSql, [...values, limit, offset]);
 
     const items = rows.map((r: any) => ({

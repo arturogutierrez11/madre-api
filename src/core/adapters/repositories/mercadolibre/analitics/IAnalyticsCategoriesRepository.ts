@@ -39,7 +39,6 @@ export interface IAnalyticsCategoriesRepository {
   getChildrenPerformance(params: { sellerId: string; parentId: string | null });
 
   getCategoryProducts(params: {
-    sellerId: string;
     categoryId: string;
     page?: number;
     limit?: number;
@@ -51,5 +50,34 @@ export interface IAnalyticsCategoriesRepository {
     maxOrders?: number;
     minRevenue?: number;
     maxRevenue?: number;
-  });
+    publishedIn?: string;
+  }): Promise<{
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+    items: {
+      id: string;
+      title: string;
+      thumbnail: string;
+      seller_sku: string;
+      price: number;
+      soldQuantity: number;
+      visits: number;
+      revenue: number;
+      isFavorite: boolean;
+      isPublished: boolean;
+      publishedMarketplaces: {
+        marketplace: string;
+        status: string;
+        price: number;
+        stock: number;
+        isActive: number;
+      }[];
+    }[];
+  }>;
 }
