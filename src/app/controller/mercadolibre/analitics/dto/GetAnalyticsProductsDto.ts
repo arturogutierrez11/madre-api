@@ -1,97 +1,86 @@
-import { IsOptional, IsInt, IsIn, IsString, Min } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
+import { IsOptional, IsNumber, IsString, IsIn, IsArray } from 'class-validator';
 
 export class GetAnalyticsProductsDto {
-  /* ================= PAGINATION ================= */
-
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsNumber()
   page?: number;
 
   @ApiPropertyOptional({ example: 20 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsNumber()
   limit?: number;
 
-  /* ================= BRAND ================= */
-
-  @ApiPropertyOptional({
-    example: 'Samsung',
-    description: 'Filtrar por marca exacta'
-  })
+  @ApiPropertyOptional({ example: 'Samsung' })
   @IsOptional()
   @IsString()
   brand?: string;
 
-  /* ================= PRICE ================= */
-
   @ApiPropertyOptional({ example: 10000 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   minPrice?: number;
 
   @ApiPropertyOptional({ example: 500000 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   maxPrice?: number;
-
-  /* ================= VISITS ================= */
 
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   minVisits?: number;
 
   @ApiPropertyOptional({ example: 1000 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   maxVisits?: number;
 
-  /* ================= ORDERS ================= */
-
-  @ApiPropertyOptional({ example: 5 })
+  @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   minOrders?: number;
 
-  @ApiPropertyOptional({ example: 50 })
+  @ApiPropertyOptional({ example: 100 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsNumber()
   maxOrders?: number;
 
-  /* ================= SORTING ================= */
-
   @ApiPropertyOptional({
-    enum: ['visits', 'orders', 'price'],
-    example: 'visits'
+    example: 'visits',
+    enum: ['visits', 'orders', 'price']
   })
   @IsOptional()
   @IsIn(['visits', 'orders', 'price'])
   orderBy?: 'visits' | 'orders' | 'price';
 
   @ApiPropertyOptional({
-    enum: ['asc', 'desc'],
-    example: 'desc'
+    example: 'desc',
+    enum: ['asc', 'desc']
   })
   @IsOptional()
   @IsIn(['asc', 'desc'])
   direction?: 'asc' | 'desc';
+
+  /* ================= EXCLUDE MARKETPLACE ================= */
+
+  @ApiPropertyOptional({
+    description: 'Excluir productos publicados en uno o más marketplaces (separados por coma)',
+    example: 'megatone,oncity'
+  })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').map((v: string) => v.trim()) : value))
+  @IsArray()
+  @IsString({ each: true })
+  excludeMarketplace?: string[];
 }

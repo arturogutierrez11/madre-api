@@ -27,6 +27,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
     orderBy?: 'visits' | 'orders' | 'price';
     direction?: 'asc' | 'desc';
+
+    excludeMarketplace?: string[]; // 👈 NUEVO
   }) {
     const {
       page = 1,
@@ -39,7 +41,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       minOrders,
       maxOrders,
       orderBy = 'visits',
-      direction = 'desc'
+      direction = 'desc',
+      excludeMarketplace
     } = params;
 
     const safeLimit = Number(limit);
@@ -86,6 +89,25 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       values.push(maxVisits);
     }
 
+    /* ================= EXCLUIR MARKETPLACES ================= */
+
+    if (excludeMarketplace?.length) {
+      const placeholders = excludeMarketplace.map(() => '?').join(',');
+
+      where.push(`
+      NOT EXISTS (
+        SELECT 1
+        FROM product_sync_items psi_filter
+        WHERE psi_filter.seller_sku COLLATE utf8mb4_unicode_ci
+              = p.seller_sku COLLATE utf8mb4_unicode_ci
+          AND psi_filter.marketplace IN (${placeholders})
+          AND psi_filter.is_active = 1
+      )
+    `);
+
+      values.push(...excludeMarketplace);
+    }
+
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     const orderMap: Record<string, string> = {
@@ -100,42 +122,80 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     /* ================= COUNT ================= */
 
     const countSql = `
-      SELECT COUNT(*) as total
-      FROM mercadolibre_products p
-      LEFT JOIN mercadolibre_item_visits v
-        ON v.item_id = p.id
-      ${whereClause}
-    `;
+    SELECT COUNT(*) as total
+    FROM mercadolibre_products p
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
+    ${whereClause}
+  `;
 
     const countResult = await this.entityManager.query(countSql, values);
 
-    const total = Number(countResult[0].total);
+    const total = Number(countResult[0]?.total ?? 0);
     const totalPages = Math.ceil(total / safeLimit);
 
     /* ================= DATA ================= */
 
     const dataSql = `
-      SELECT
-        p.id,
-        p.title,
-        p.thumbnail,
-        p.price,
-        p.seller_sku,
-        p.sold_quantity AS soldQuantity,
-        COALESCE(v.total_visits, 0) AS visits
+    SELECT
+      p.id,
+      p.title,
+      p.thumbnail,
+      p.price,
+      p.seller_sku,
+      p.sold_quantity AS soldQuantity,
+      COALESCE(v.total_visits, 0) AS visits,
 
-      FROM mercadolibre_products p
+      /* FAVORITOS */
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM marketplace_favorite_products mfp
+          WHERE mfp.product_id = p.id
+        )
+        THEN 1 ELSE 0
+      END AS isFavorite,
 
-      LEFT JOIN mercadolibre_item_visits v
-        ON v.item_id = p.id
+      /* PUBLICADOS */
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM product_sync_items psi
+          WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+                = p.seller_sku COLLATE utf8mb4_unicode_ci
+            AND psi.is_active = 1
+        )
+        THEN 1 ELSE 0
+      END AS isPublished,
 
-      ${whereClause}
+      (
+        SELECT JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'marketplace', psi.marketplace,
+            'status', psi.status,
+            'price', psi.price,
+            'stock', psi.stock,
+            'isActive', psi.is_active
+          )
+        )
+        FROM product_sync_items psi
+        WHERE psi.seller_sku COLLATE utf8mb4_unicode_ci
+              = p.seller_sku COLLATE utf8mb4_unicode_ci
+          AND psi.is_active = 1
+      ) AS publishedMarketplaces
 
-      ORDER BY ${orderColumn} ${orderDirection}
+    FROM mercadolibre_products p
 
-      LIMIT ?
-      OFFSET ?
-    `;
+    LEFT JOIN mercadolibre_item_visits v
+      ON v.item_id = p.id
+
+    ${whereClause}
+
+    ORDER BY ${orderColumn} ${orderDirection}
+
+    LIMIT ?
+    OFFSET ?
+  `;
 
     const rows = await this.entityManager.query(dataSql, [...values, safeLimit, offset]);
 
@@ -153,9 +213,17 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
         title: r.title,
         thumbnail: r.thumbnail,
         price: Number(r.price),
-        seller_sku: r.seller_sku, // 🔥 NUEVO
+        seller_sku: r.seller_sku,
         soldQuantity: Number(r.soldQuantity),
-        visits: Number(r.visits)
+        visits: Number(r.visits),
+
+        isFavorite: Boolean(r.isFavorite),
+        isPublished: Boolean(r.isPublished),
+
+        publishedMarketplaces:
+          typeof r.publishedMarketplaces === 'string'
+            ? JSON.parse(r.publishedMarketplaces)
+            : (r.publishedMarketplaces ?? [])
       }))
     };
   }

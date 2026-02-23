@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Delete, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiOkResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { MarketplaceFavoritesService } from 'src/app/services/mercadolibre/analitics/AnalitycsFavoritesService';
+import { BulkAddFavoritesDto } from './dto/BulkAddFavoritesDto';
 
 @ApiTags('Analytics - Marketplace Favorites')
 @Controller('analytics/marketplace-favorites')
@@ -170,5 +171,23 @@ Incluye:
   })
   async getFavorites(@Param('marketplaceId') marketplaceId: number) {
     return this.service.getFavorites(marketplaceId);
+  }
+  @Post('bulk')
+  @ApiOperation({
+    summary: 'Agregar múltiples productos a favoritos en uno o más marketplaces'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Favoritos agregados correctamente',
+    schema: {
+      example: {
+        success: true,
+        marketplacesAffected: 2,
+        itemsPerMarketplace: 10
+      }
+    }
+  })
+  async bulkAdd(@Body() dto: BulkAddFavoritesDto) {
+    return this.service.addFavoritesBulk(dto.marketplaceIds, dto.products);
   }
 }

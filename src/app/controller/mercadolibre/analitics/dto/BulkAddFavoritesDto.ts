@@ -1,31 +1,25 @@
-import { IsOptional, IsNumber, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsNumber, IsString } from 'class-validator';
 
 export class BulkAddFavoritesDto {
-  @IsOptional()
-  @IsString()
-  categoryId?: string;
+  @ApiProperty({
+    example: [1, 2],
+    description: 'IDs de marketplaces donde agregar favoritos'
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  marketplaceIds: number[];
 
-  @IsOptional()
-  @IsString()
-  brand?: string;
-
-  @IsOptional()
-  @IsNumber()
-  minRevenue?: number;
-
-  @IsOptional()
-  @IsNumber()
-  minVisits?: number;
-
-  @IsOptional()
-  @IsNumber()
-  minOrders?: number;
-
-  @IsOptional()
-  @IsNumber()
-  minPrice?: number;
-
-  @IsOptional()
-  @IsNumber()
-  maxPrice?: number;
+  @ApiProperty({
+    example: [
+      { productId: 'MLA123', sellerSku: 'SKU123' },
+      { productId: 'MLA456', sellerSku: 'SKU456' }
+    ],
+    description: 'Productos a agregar como favoritos'
+  })
+  @IsArray()
+  products: {
+    productId: string;
+    sellerSku: string;
+  }[];
 }

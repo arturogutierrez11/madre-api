@@ -16,6 +16,8 @@ export interface IAnalyticsProductsRepository {
 
     orderBy?: 'visits' | 'orders' | 'price';
     direction?: 'asc' | 'desc';
+
+    excludeMarketplace?: string[];
   }): Promise<{
     meta: {
       page: number;
@@ -33,6 +35,16 @@ export interface IAnalyticsProductsRepository {
       soldQuantity: number;
       visits: number;
       seller_sku: string;
+
+      isFavorite: boolean;
+      isPublished: boolean;
+      publishedMarketplaces: {
+        marketplace: string;
+        status: string;
+        price: number;
+        stock: number;
+        isActive: number;
+      }[];
     }[];
   }>;
 }

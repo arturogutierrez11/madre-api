@@ -75,4 +75,32 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
 
     return this.entityManager.query(sql, [marketplaceId]);
   }
+  async addFavoritesBulk(marketplaceId: number, items: { productId: string; sellerSku: string }[]) {
+    if (!items.length) {
+      return { success: true, inserted: 0 };
+    }
+
+    const values: any[] = [];
+
+    const placeholders = items.map(() => '(?, ?, ?)').join(',');
+
+    items.forEach(item => {
+      values.push(item.productId, item.sellerSku, marketplaceId);
+    });
+
+    const sql = `
+    INSERT INTO marketplace_favorite_products
+      (product_id, seller_sku, marketplace_id)
+    VALUES ${placeholders}
+    ON DUPLICATE KEY UPDATE
+      seller_sku = VALUES(seller_sku)
+  `;
+
+    await this.entityManager.query(sql, values);
+
+    return {
+      success: true,
+      inserted: items.length
+    };
+  }
 }
