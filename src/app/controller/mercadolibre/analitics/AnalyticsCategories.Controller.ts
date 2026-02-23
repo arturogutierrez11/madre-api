@@ -192,9 +192,8 @@ Incluye toda la rama (hijos y subhijos).
     required: false,
     example: 'megatone,oncity',
     description: `
-Excluye productos que estén publicados en uno o más marketplaces.
-
-📌 Separar múltiples marketplaces con coma.
+Excluye productos publicados en uno o más marketplaces.
+Separar múltiples marketplaces con coma.
 Ejemplo:
 ?excludeMarketplace=megatone,oncity
 `
@@ -213,17 +212,28 @@ Ejemplo:
     @Query('maxRevenue') maxRevenue?: string,
     @Query('excludeMarketplace') excludeMarketplace?: string
   ) {
-    return this.analyticsService.getCategoryProducts(categoryId, page ? Number(page) : 1, limit ? Number(limit) : 20, {
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      minVisits: minVisits ? Number(minVisits) : undefined,
-      maxVisits: maxVisits ? Number(maxVisits) : undefined,
-      minOrders: minOrders ? Number(minOrders) : undefined,
-      maxOrders: maxOrders ? Number(maxOrders) : undefined,
-      minRevenue: minRevenue ? Number(minRevenue) : undefined,
-      maxRevenue: maxRevenue ? Number(maxRevenue) : undefined,
+    const safePage = page !== undefined && !isNaN(Number(page)) ? Math.max(1, Number(page)) : 1;
 
-      excludeMarketplace: excludeMarketplace ? excludeMarketplace.split(',').map(m => m.trim()) : undefined
+    const safeLimit = limit !== undefined && !isNaN(Number(limit)) ? Math.min(100, Math.max(1, Number(limit))) : 20;
+
+    const excludeMarketplaceArray =
+      typeof excludeMarketplace === 'string'
+        ? excludeMarketplace
+            .split(',')
+            .map(m => m.trim())
+            .filter(Boolean)
+        : undefined;
+
+    return this.analyticsService.getCategoryProducts(categoryId, safePage, safeLimit, {
+      minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+      maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+      minVisits: minVisits !== undefined ? Number(minVisits) : undefined,
+      maxVisits: maxVisits !== undefined ? Number(maxVisits) : undefined,
+      minOrders: minOrders !== undefined ? Number(minOrders) : undefined,
+      maxOrders: maxOrders !== undefined ? Number(maxOrders) : undefined,
+      minRevenue: minRevenue !== undefined ? Number(minRevenue) : undefined,
+      maxRevenue: maxRevenue !== undefined ? Number(maxRevenue) : undefined,
+      excludeMarketplace: excludeMarketplaceArray
     });
   }
 }

@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IAnalyticsCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/IAnalyticsCategoriesRepository';
-
 import { ISQLMercadoLibreCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/categories/ISQLMercadoLibreCategoriesRepository';
 
 @Injectable()
@@ -15,6 +14,10 @@ export class AnalyticsCategoriesService {
     private readonly categoriesRepository: ISQLMercadoLibreCategoriesRepository
   ) {}
 
+  /* ===================================================== */
+  /* CATEGORIES PERFORMANCE */
+  /* ===================================================== */
+
   async getCategoriesPerformance(params: {
     categoryId?: string;
     orderBy?: 'visits' | 'orders' | 'conversion' | 'revenue';
@@ -24,13 +27,13 @@ export class AnalyticsCategoriesService {
 
     const allowedOrderBy = ['visits', 'orders', 'conversion', 'revenue'];
     const safeOrderBy = allowedOrderBy.includes(orderBy ?? '') ? orderBy : 'visits';
+
     const safeDirection = direction === 'asc' ? 'asc' : 'desc';
 
-    let categoryIds: string[] | undefined = undefined;
+    let categoryIds: string[] | undefined;
 
     if (categoryId) {
       const subtree = await this.categoriesRepository.findSubTree(categoryId);
-
       categoryIds = subtree.map(c => c.id);
     }
 
@@ -42,9 +45,10 @@ export class AnalyticsCategoriesService {
     });
   }
 
-  // ─────────────────────────────────────────────
-  // PARENT CATEGORIES PERFORMANCE (Executive)
-  // ─────────────────────────────────────────────
+  /* ===================================================== */
+  /* PARENT PERFORMANCE */
+  /* ===================================================== */
+
   async getParentCategoriesPerformance(params?: {
     orderBy?: 'visits' | 'orders' | 'revenue';
     direction?: 'asc' | 'desc';
@@ -63,19 +67,28 @@ export class AnalyticsCategoriesService {
     });
   }
 
+  /* ===================================================== */
+  /* AVAILABLE CATEGORIES */
+  /* ===================================================== */
+
   async getAvailableCategories() {
     return this.repository.getAvailableCategories();
   }
 
-  // ─────────────────────────────────────────────
-  // GET CHILDREN PERFORMANCE
-  // ─────────────────────────────────────────────
+  /* ===================================================== */
+  /* CHILDREN PERFORMANCE */
+  /* ===================================================== */
+
   async getChildrenPerformance(parentId?: string) {
     return this.repository.getChildrenPerformance({
       sellerId: this.SELLER_ID,
       parentId: parentId ?? null
     });
   }
+
+  /* ===================================================== */
+  /* CATEGORY PRODUCTS (CON FILTROS COMPLETOS) */
+  /* ===================================================== */
 
   async getCategoryProducts(
     categoryId: string,
@@ -97,7 +110,15 @@ export class AnalyticsCategoriesService {
       categoryId,
       page,
       limit,
-      ...filters
+      minPrice: filters?.minPrice,
+      maxPrice: filters?.maxPrice,
+      minVisits: filters?.minVisits,
+      maxVisits: filters?.maxVisits,
+      minOrders: filters?.minOrders,
+      maxOrders: filters?.maxOrders,
+      minRevenue: filters?.minRevenue,
+      maxRevenue: filters?.maxRevenue,
+      excludeMarketplace: filters?.excludeMarketplace
     });
   }
 }

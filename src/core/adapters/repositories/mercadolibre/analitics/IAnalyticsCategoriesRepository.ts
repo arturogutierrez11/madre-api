@@ -50,7 +50,7 @@ export interface IAnalyticsCategoriesRepository {
     maxOrders?: number;
     minRevenue?: number;
     maxRevenue?: number;
-    publishedIn?: string;
+    excludeMarketplace?: string[];
   }): Promise<{
     meta: {
       page: number;
