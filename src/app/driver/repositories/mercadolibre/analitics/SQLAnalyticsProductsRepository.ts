@@ -3,6 +3,21 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { IAnalyticsProductsRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/IAnalyticsProductsRepository';
 import { EntityManager } from 'typeorm';
 
+type ProductsFilters = {
+  brand?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minVisits?: number;
+  maxVisits?: number;
+  minOrders?: number;
+  maxOrders?: number;
+
+  excludeMarketplace?: string[];
+  inMarketplace?: number;
+  marketplaceStatus?: 'published' | 'not_published';
+};
+
 @Injectable()
 export class SQLAnalyticsProductsRepository implements IAnalyticsProductsRepository {
   constructor(
@@ -10,243 +25,344 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     private readonly entityManager: EntityManager
   ) {}
 
-  async getProducts(params: {
-    page?: number;
-    limit?: number;
-    brand?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    minVisits?: number;
-    maxVisits?: number;
-    minOrders?: number;
-    maxOrders?: number;
-    orderBy?: 'visits' | 'orders' | 'price';
-    direction?: 'asc' | 'desc';
-    excludeMarketplace?: string[];
-  }) {
-    const {
-      page = 1,
-      limit = 20,
-      brand,
-      minPrice,
-      maxPrice,
-      minVisits,
-      maxVisits,
-      minOrders,
-      maxOrders,
-      orderBy = 'visits',
-      direction = 'desc',
-      excludeMarketplace
-    } = params;
+  /* ============================================================
+     🔹 METADATA - CATEGORIES TREE
+     ============================================================ */
 
-    const safeLimit = Number(limit);
-    const safePage = Number(page);
-    const offset = (safePage - 1) * safeLimit;
+  async getCategoriesTree(search?: string) {
+    const values: any[] = [];
+    let where = '';
 
+    if (search) {
+      where = `WHERE name LIKE ?`;
+      values.push(`%${search}%`);
+    }
+
+    const sql = `
+      SELECT
+        id,
+        name,
+        parent_id,
+        level,
+        path,
+        is_leaf
+      FROM mercadolibre_categories
+      ${where}
+      ORDER BY path ASC
+    `;
+
+    return this.entityManager.query(sql, values);
+  }
+
+  /* ============================================================
+     🔹 METADATA - BRANDS (PARA SELECT / BUSCADOR)
+     ============================================================ */
+
+  async getBrands(search?: string) {
+    const values: any[] = [];
+    let where = 'WHERE brand IS NOT NULL AND brand <> ""';
+
+    if (search) {
+      where += ` AND brand LIKE ?`;
+      values.push(`%${search}%`);
+    }
+
+    const sql = `
+      SELECT DISTINCT brand
+      FROM mercadolibre_products
+      ${where}
+      ORDER BY brand ASC
+      LIMIT 100
+    `;
+
+    return this.entityManager.query(sql, values);
+  }
+
+  /* ============================================================
+     🔹 FILTER BUILDER (REUTILIZABLE)
+     ============================================================ */
+
+  private async buildFilters(params: ProductsFilters) {
     const where: string[] = [];
     const values: any[] = [];
 
-    /* ================= FILTERS ================= */
-
-    if (brand) {
+    /* ===== BRAND ===== */
+    if (params.brand) {
       where.push(`p.brand = ?`);
-      values.push(brand);
+      values.push(params.brand);
     }
 
-    if (minPrice !== undefined) {
+    /* ===== CATEGORY (SUBTREE) ===== */
+    if (params.categoryId) {
+      const pathRow = await this.entityManager.query(`SELECT path FROM mercadolibre_categories WHERE id = ?`, [
+        params.categoryId
+      ]);
+
+      const categoryPath = pathRow[0]?.path;
+
+      if (categoryPath) {
+        where.push(`c.path LIKE ?`);
+        values.push(`${categoryPath}%`);
+      }
+    }
+
+    /* ===== PRICE ===== */
+    if (params.minPrice !== undefined) {
       where.push(`p.price >= ?`);
-      values.push(minPrice);
+      values.push(params.minPrice);
     }
 
-    if (maxPrice !== undefined) {
+    if (params.maxPrice !== undefined) {
       where.push(`p.price <= ?`);
-      values.push(maxPrice);
+      values.push(params.maxPrice);
     }
 
-    if (minOrders !== undefined) {
+    /* ===== ORDERS ===== */
+    if (params.minOrders !== undefined) {
       where.push(`p.sold_quantity >= ?`);
-      values.push(minOrders);
+      values.push(params.minOrders);
     }
 
-    if (maxOrders !== undefined) {
+    if (params.maxOrders !== undefined) {
       where.push(`p.sold_quantity <= ?`);
-      values.push(maxOrders);
+      values.push(params.maxOrders);
     }
 
-    if (minVisits !== undefined) {
+    /* ===== VISITS ===== */
+    if (params.minVisits !== undefined) {
       where.push(`COALESCE(v.total_visits, 0) >= ?`);
-      values.push(minVisits);
+      values.push(params.minVisits);
     }
 
-    if (maxVisits !== undefined) {
+    if (params.maxVisits !== undefined) {
       where.push(`COALESCE(v.total_visits, 0) <= ?`);
-      values.push(maxVisits);
+      values.push(params.maxVisits);
     }
 
-    /* ================= EXCLUDE MARKETPLACE ================= */
+    /* ===== EN CARPETA ===== */
+    if (params.inMarketplace) {
+      where.push(`
+        EXISTS (
+          SELECT 1
+          FROM marketplace_favorite_products mf
+          WHERE mf.product_id = p.id
+          AND mf.marketplace_id = ?
+        )
+      `);
+      values.push(params.inMarketplace);
+    }
 
-    if (excludeMarketplace?.length) {
-      const placeholders = excludeMarketplace.map(() => '?').join(',');
+    /* ===== PUBLICATION STATUS ===== */
+    if (params.marketplaceStatus === 'published') {
+      where.push(`
+        EXISTS (
+          SELECT 1
+          FROM product_sync_items psi
+          WHERE psi.seller_sku = p.seller_sku
+          AND psi.is_active = 1
+        )
+      `);
+    }
+
+    if (params.marketplaceStatus === 'not_published') {
+      where.push(`
+        NOT EXISTS (
+          SELECT 1
+          FROM product_sync_items psi
+          WHERE psi.seller_sku = p.seller_sku
+          AND psi.is_active = 1
+        )
+      `);
+    }
+
+    /* ===== EXCLUDE MARKETPLACE ===== */
+    if (params.excludeMarketplace?.length) {
+      const placeholders = params.excludeMarketplace.map(() => '?').join(',');
 
       where.push(`
-      NOT EXISTS (
-        SELECT 1
-        FROM product_sync_items psi
-        WHERE psi.seller_sku = p.seller_sku
+        NOT EXISTS (
+          SELECT 1
+          FROM product_sync_items psi
+          WHERE psi.seller_sku = p.seller_sku
           AND psi.marketplace IN (${placeholders})
           AND psi.is_active = 1
-      )
-    `);
+        )
+      `);
 
-      values.push(...excludeMarketplace);
+      values.push(...params.excludeMarketplace);
     }
 
-    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-
-    const orderMap: Record<string, string> = {
-      visits: 'visits',
-      orders: 'p.sold_quantity',
-      price: 'p.price'
+    return {
+      whereClause: where.length ? `WHERE ${where.join(' AND ')}` : '',
+      values
     };
+  }
 
-    const orderColumn = orderMap[orderBy] ?? 'visits';
-    const orderDirection = direction?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+  /* ============================================================
+     🔹 OVERVIEW
+     ============================================================ */
 
-    /* ================= COUNT (LIVIANO) ================= */
+  async getProductsOverview(params: ProductsFilters) {
+    const { whereClause, values } = await this.buildFilters(params);
+
+    const sql = `
+      SELECT
+        COUNT(DISTINCT p.id) AS totalProducts,
+        COALESCE(SUM(p.sold_quantity), 0) AS totalOrders,
+        COALESCE(SUM(v.total_visits), 0) AS totalVisits,
+        COALESCE(SUM(p.price * p.sold_quantity), 0) AS totalRevenue,
+        COALESCE(AVG(p.price), 0) AS avgPrice,
+
+        CASE
+          WHEN SUM(p.sold_quantity) > 0
+          THEN SUM(p.price * p.sold_quantity) / SUM(p.sold_quantity)
+          ELSE 0
+        END AS avgTicket
+
+      FROM mercadolibre_products p
+      JOIN mercadolibre_categories c ON c.id = p.category_id
+      LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+
+      ${whereClause}
+    `;
+
+    const result = await this.entityManager.query(sql, values);
+    const row = result[0] ?? {};
+
+    return {
+      totalProducts: Number(row.totalProducts ?? 0),
+      totalOrders: Number(row.totalOrders ?? 0),
+      totalVisits: Number(row.totalVisits ?? 0),
+      totalRevenue: Number(row.totalRevenue ?? 0),
+      avgPrice: Number(row.avgPrice ?? 0),
+      avgTicket: Number(row.avgTicket ?? 0)
+    };
+  }
+
+  /* ============================================================
+     🔹 SAVE SELECTION
+     ============================================================ */
+
+  async saveSelectionToFolder(marketplaceId: number, filters: ProductsFilters) {
+    const { whereClause, values } = await this.buildFilters(filters);
+
+    const sql = `
+      INSERT INTO marketplace_favorite_products
+        (product_id, seller_sku, marketplace_id)
+
+      SELECT
+        p.id,
+        p.seller_sku,
+        ?
+
+      FROM mercadolibre_products p
+      JOIN mercadolibre_categories c ON c.id = p.category_id
+      LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+
+      ${whereClause}
+
+      ON DUPLICATE KEY UPDATE
+        seller_sku = VALUES(seller_sku)
+    `;
+
+    await this.entityManager.query(sql, [marketplaceId, ...values]);
+
+    return { success: true };
+  }
+
+  /* ============================================================
+   🔹 METADATA - CATEGORIES TREE (SELECT COMPLETO)
+   ============================================================ */
+
+  async getCategoriesForSelect() {
+    const sql = `
+    SELECT
+      id,
+      name,
+      parent_id,
+      level,
+      path,
+      is_leaf
+    FROM mercadolibre_categories
+    ORDER BY path ASC
+  `;
+
+    return this.entityManager.query(sql);
+  }
+
+  /* ============================================================
+   🔹 METADATA - SEARCH CATEGORIES (BUSCADOR)
+   ============================================================ */
+
+  async searchCategoriesByName(search: string) {
+    const sql = `
+    SELECT
+      id,
+      name,
+      parent_id,
+      level,
+      path,
+      is_leaf
+    FROM mercadolibre_categories
+    WHERE name LIKE ?
+    ORDER BY level ASC, name ASC
+    LIMIT 50
+  `;
+
+    return this.entityManager.query(sql, [`%${search}%`]);
+  }
+  async saveSelectionAsSegment(marketplaceId: number, filters: ProductsFilters) {
+    const { whereClause, values } = await this.buildFilters(filters);
+
+    const segmentInsert = `
+    INSERT INTO marketplace_filter_segments
+      (marketplace_id, filters_json, total_products)
+    VALUES (?, ?, 0)
+  `;
+
+    const segmentResult: any = await this.entityManager.query(segmentInsert, [marketplaceId, JSON.stringify(filters)]);
+
+    const segmentId = segmentResult.insertId;
+
+    const insertProductsSql = `
+    INSERT INTO marketplace_segment_products
+      (segment_id, product_id, seller_sku, marketplace_id)
+
+    SELECT
+      ?,
+      p.id,
+      p.seller_sku,
+      ?
+
+    FROM mercadolibre_products p
+    JOIN mercadolibre_categories c ON c.id = p.category_id
+    LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+
+    ${whereClause}
+
+    ON DUPLICATE KEY UPDATE
+      seller_sku = VALUES(seller_sku)
+  `;
+
+    await this.entityManager.query(insertProductsSql, [segmentId, marketplaceId, ...values]);
 
     const countSql = `
     SELECT COUNT(*) as total
-    FROM mercadolibre_products p
-    LEFT JOIN mercadolibre_item_visits v
-      ON v.item_id = p.id
-    ${whereClause}
+    FROM marketplace_segment_products
+    WHERE segment_id = ?
   `;
 
-    const countResult = await this.entityManager.query(countSql, values);
-    const total = Number(countResult[0]?.total ?? 0);
-    const totalPages = Math.ceil(total / safeLimit);
+    const countResult = await this.entityManager.query(countSql, [segmentId]);
 
-    /* ================= DATA PAGINADA (SIN JSON) ================= */
-
-    const dataSql = `
-    SELECT
-      p.id,
-      p.title,
-      p.thumbnail,
-      p.price,
-      p.seller_sku,
-      p.sold_quantity AS soldQuantity,
-      COALESCE(v.total_visits, 0) AS visits
-    FROM mercadolibre_products p
-    LEFT JOIN mercadolibre_item_visits v
-      ON v.item_id = p.id
-    ${whereClause}
-    ORDER BY ${orderColumn} ${orderDirection}
-    LIMIT ?
-    OFFSET ?
-  `;
-
-    const rows = await this.entityManager.query(dataSql, [...values, safeLimit, offset]);
-
-    if (!rows.length) {
-      return {
-        meta: {
-          page: safePage,
-          limit: safeLimit,
-          total,
-          totalPages,
-          hasNext: safePage < totalPages,
-          hasPrev: safePage > 1
-        },
-        items: []
-      };
-    }
-
-    /* ================= TRAER FAVORITOS SOLO PARA ESTOS ================= */
-
-    const productIds = rows.map((r: any) => r.id);
-    const skuList = rows.map((r: any) => r.seller_sku);
-
-    const placeholdersIds = productIds.map(() => '?').join(',');
-    const placeholdersSku = skuList.map(() => '?').join(',');
-
-    const favorites = await this.entityManager.query(
-      `
-      SELECT product_id
-      FROM marketplace_favorite_products
-      WHERE product_id IN (${placeholdersIds})
-    `,
-      productIds
-    );
-
-    const published = await this.entityManager.query(
-      `
-      SELECT DISTINCT seller_sku
-      FROM product_sync_items
-      WHERE is_active = 1
-        AND seller_sku IN (${placeholdersSku})
-    `,
-      skuList
-    );
-
-    const marketplaces = await this.entityManager.query(
-      `
-      SELECT
-        seller_sku,
-        marketplace,
-        status,
-        price,
-        stock,
-        is_active
-      FROM product_sync_items
-      WHERE is_active = 1
-        AND seller_sku IN (${placeholdersSku})
-    `,
-      skuList
-    );
-
-    const favoriteSet = new Set(favorites.map((f: any) => f.product_id));
-    const publishedSet = new Set(published.map((p: any) => p.seller_sku));
-
-    const marketplaceMap = new Map<string, any[]>();
-
-    for (const m of marketplaces) {
-      if (!marketplaceMap.has(m.seller_sku)) {
-        marketplaceMap.set(m.seller_sku, []);
-      }
-
-      marketplaceMap.get(m.seller_sku)!.push({
-        marketplace: m.marketplace,
-        status: m.status,
-        price: Number(m.price),
-        stock: Number(m.stock),
-        isActive: Number(m.is_active)
-      });
-    }
-
-    /* ================= RESPONSE FINAL ================= */
+    await this.entityManager.query(`UPDATE marketplace_filter_segments SET total_products = ? WHERE id = ?`, [
+      countResult[0].total,
+      segmentId
+    ]);
 
     return {
-      meta: {
-        page: safePage,
-        limit: safeLimit,
-        total,
-        totalPages,
-        hasNext: safePage < totalPages,
-        hasPrev: safePage > 1
-      },
-      items: rows.map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        thumbnail: r.thumbnail,
-        price: Number(r.price),
-        seller_sku: r.seller_sku,
-        soldQuantity: Number(r.soldQuantity),
-        visits: Number(r.visits),
-        isFavorite: favoriteSet.has(r.id),
-        isPublished: publishedSet.has(r.seller_sku),
-        publishedMarketplaces: marketplaceMap.get(r.seller_sku) ?? []
-      }))
+      success: true,
+      segmentId,
+      totalProducts: countResult[0].total
     };
   }
 }
