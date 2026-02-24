@@ -16,15 +16,4 @@ export class GetAnalyticsBrands {
   async getBrands(params: Parameters<IAnalyticsBrandsRepository['getBrands']>[0]) {
     return this.brandsRepository.getBrands(params);
   }
-
-  // 🔵 Productos de una marca específica
-  async getBrandProducts(
-    brand: string,
-    params: Omit<Parameters<IAnalyticsProductsRepository['getProducts']>[0], 'brand'>
-  ) {
-    return this.productsRepository.getProducts({
-      ...params,
-      brand
-    });
-  }
 }
