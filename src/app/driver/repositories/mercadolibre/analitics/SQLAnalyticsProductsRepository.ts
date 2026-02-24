@@ -60,7 +60,7 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
   async getBrands(search?: string) {
     const values: any[] = [];
-    let where = 'WHERE brand IS NOT NULL AND brand <> ""';
+    let where = "WHERE brand IS NOT NULL AND brand <> ''";
 
     if (search) {
       where += ` AND brand LIKE ?`;
@@ -68,12 +68,12 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     }
 
     const sql = `
-      SELECT DISTINCT brand
-      FROM mercadolibre_products
-      ${where}
-      ORDER BY brand ASC
-      LIMIT 100
-    `;
+    SELECT DISTINCT brand
+    FROM mercadolibre_products
+    ${where}
+    ORDER BY brand ASC
+    LIMIT 100
+  `;
 
     return this.entityManager.query(sql, values);
   }
