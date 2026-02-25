@@ -21,7 +21,7 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
 
   async getMarketplaces() {
     const sql = `
-      SELECT id, name
+      SELECT id, name, status
       FROM marketplaces
       ORDER BY name ASC
     `;
