@@ -316,6 +316,10 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
     return this.entityManager.query(sql, [`%${search}%`]);
   }
+  /* ============================================================
+     🔹 GUARDAR LA BUSQUEDA 
+     ============================================================ */
+
   async saveSelectionAsSegment(marketplaceId: number, filters: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(filters);
 

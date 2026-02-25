@@ -8,4 +8,20 @@ export interface ISQLAnalyticsFavoritesRepository {
   ): Promise<{ success: boolean; inserted: number }>;
   getMarketplaces();
   createMarketplace(name: string);
+
+  getMarketplaceOverview(marketplaceId: number): Promise<{
+    totalProducts: number;
+    totalVisits: number;
+    totalOrders: number;
+    totalRevenue: number;
+    avgPrice: number;
+    avgTicket: number;
+    totalBrands: number;
+    totalCategories: number;
+  }>;
+  getMarketplaceBrandsBreakdown(marketplaceId: number);
+  getMarketplaceCategoriesBreakdown(marketplaceId: number);
+  getMarketplaceById(id: number);
+  updateMarketplaceStatus(id: number, status: 'active' | 'closed');
+  deleteMarketplace(id: number): Promise<{ success: boolean }>;
 }
