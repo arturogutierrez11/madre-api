@@ -12,7 +12,7 @@ type ProductsFilters = {
   maxVisits?: number;
   minOrders?: number;
   maxOrders?: number;
-
+  status?: 'active' | 'under_review' | 'paused' | 'closed';
   excludeMarketplace?: string[];
   inMarketplace?: number;
   marketplaceStatus?: 'published' | 'not_published';
@@ -192,6 +192,11 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       values.push(...params.excludeMarketplace);
     }
 
+    /* ===== PRODUCT STATUS IN MELI===== */
+    if (params.status) {
+      where.push(`p.status = ?`);
+      values.push(params.status);
+    }
     return {
       whereClause: where.length ? `WHERE ${where.join(' AND ')}` : '',
       values
