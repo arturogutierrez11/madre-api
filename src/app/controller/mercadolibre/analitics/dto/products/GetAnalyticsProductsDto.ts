@@ -73,4 +73,12 @@ export class GetAnalyticsProductsDto {
   @IsOptional()
   @IsIn(['published', 'not_published'])
   marketplaceStatus?: 'published' | 'not_published';
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por estado del producto',
+    enum: ['active', 'under_review', 'paused', 'closed']
+  })
+  @IsOptional()
+  @IsIn(['active', 'under_review', 'paused', 'closed'])
+  status?: 'active' | 'under_review' | 'paused' | 'closed';
 }
