@@ -3,6 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MarketplaceFavoritesService } from 'src/app/services/mercadolibre/analitics/AnalitycsFavoritesService';
 import { UpdateMarketplaceStatusDto } from './dto/UpdateMarketplaceStatusDto';
 import { GetFavoritesQueryDto } from './dto/favorites/getFavorites.dto';
+import { BulkAddFavoritesDto } from './dto/BulkAddFavoritesDto';
 
 @ApiTags('Marketplace Favorites')
 @Controller('analytics/marketplace-favorites')
@@ -67,29 +68,23 @@ export class MarketplaceFavoritesController {
     return this.service.removeFavoritesBulk(marketplaceId, productIds);
   }
 
-  @Post('favorites/bulk')
-  @ApiOperation({ summary: 'Add products to multiple marketplace folders' })
-  @ApiResponse({ status: 201, description: 'Products added in bulk' })
-  async addFavoritesBulk(
-    @Body()
-    body: {
-      marketplaceIds: number[];
-      items: { productId: string; sellerSku: string }[];
-    }
-  ) {
-    return this.service.addFavoritesBulk(body.marketplaceIds, body.items);
-  }
-
-  /* ================= Obtener items de una carpeta con filtros y detalle ================= */
-
-  @Get(':id/favorites')
-  @ApiOperation({ summary: 'Get favorites with filters, sorting and pagination' })
-  @ApiResponse({
-    status: 200,
-    description: 'Paginated favorites list'
+  @Post('bulk')
+  @ApiOperation({
+    summary: 'Add products to multiple marketplace folders'
   })
-  async getFavorites(@Param('id', ParseIntPipe) marketplaceId: number, @Query() query: GetFavoritesQueryDto) {
-    return this.service.getFavorites(marketplaceId, query);
+  @ApiResponse({
+    status: 201,
+    description: 'Products added in bulk',
+    schema: {
+      example: {
+        success: true,
+        marketplacesAffected: 2,
+        itemsPerMarketplace: 2
+      }
+    }
+  })
+  async addFavoritesBulk(@Body() body: BulkAddFavoritesDto) {
+    return this.service.addFavoritesBulk(body.marketplaceIds, body.products);
   }
 
   /* ================= ANALYTICS ================= */

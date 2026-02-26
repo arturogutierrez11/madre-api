@@ -1,5 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class FavoriteProductDto {
+  @ApiProperty({ example: 'MLA123' })
+  @IsString()
+  productId: string;
+
+  @ApiProperty({ example: 'SKU123' })
+  @IsString()
+  sellerSku: string;
+}
 
 export class BulkAddFavoritesDto {
   @ApiProperty({
@@ -11,15 +22,11 @@ export class BulkAddFavoritesDto {
   marketplaceIds: number[];
 
   @ApiProperty({
-    example: [
-      { productId: 'MLA123', sellerSku: 'SKU123' },
-      { productId: 'MLA456', sellerSku: 'SKU456' }
-    ],
+    type: [FavoriteProductDto],
     description: 'Productos a agregar como favoritos'
   })
   @IsArray()
-  products: {
-    productId: string;
-    sellerSku: string;
-  }[];
+  @ValidateNested({ each: true })
+  @Type(() => FavoriteProductDto)
+  products: FavoriteProductDto[];
 }
