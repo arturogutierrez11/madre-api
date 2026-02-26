@@ -362,36 +362,30 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
   }
   async getMarketplaceCategoriesBreakdown(marketplaceId: number) {
     const sql = `
-    SELECT
-      c.id AS categoryId,
-      c.name AS categoryName,
-      c.level,
-      COUNT(DISTINCT p.id) AS totalProducts,
-      c.path,
-
-      (
-        SELECT GROUP_CONCAT(parent.name ORDER BY parent.level SEPARATOR ' > ')
-        FROM mercadolibre_categories parent
-        WHERE FIND_IN_SET(
-          parent.id,
-          REPLACE(c.path, '.', ',')
-        )
-      ) AS fullPath
+    SELECT DISTINCT
+      parent.id   AS categoryId,
+      parent.name AS categoryName,
+      parent.level,
+      parent.path
 
     FROM marketplace_favorite_products mf
 
     INNER JOIN mercadolibre_products p
       ON p.id = mf.product_id
 
-    INNER JOIN mercadolibre_categories c
-      ON c.id = p.category_id
+    INNER JOIN mercadolibre_categories leaf
+      ON leaf.id = p.category_id
+
+    INNER JOIN mercadolibre_categories parent
+      ON FIND_IN_SET(
+        parent.id,
+        REPLACE(leaf.path, '.', ',')
+      )
 
     WHERE mf.marketplace_id = ?
-      AND p.category_id IS NOT NULL
+      AND parent.level IN (1, 2)
 
-    GROUP BY c.id, c.name, c.level, c.path
-
-    ORDER BY c.path ASC
+    ORDER BY parent.path ASC
   `;
 
     const rows = await this.entityManager.query(sql, [marketplaceId]);
@@ -400,8 +394,8 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
       categoryId: r.categoryId,
       categoryName: r.categoryName,
       level: Number(r.level),
-      totalProducts: Number(r.totalProducts),
-      fullPath: r.fullPath
+      totalProducts: 0,
+      fullPath: r.categoryName
     }));
   }
 
