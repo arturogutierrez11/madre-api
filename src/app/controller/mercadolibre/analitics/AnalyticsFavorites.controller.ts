@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Delete, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MarketplaceFavoritesService } from 'src/app/services/mercadolibre/analitics/AnalitycsFavoritesService';
 import { UpdateMarketplaceStatusDto } from './dto/UpdateMarketplaceStatusDto';
+import { GetFavoritesQueryDto } from './dto/favorites/getFavorites.dto';
 
 @ApiTags('Marketplace Favorites')
 @Controller('analytics/marketplace-favorites')
@@ -44,11 +45,26 @@ export class MarketplaceFavoritesController {
     return this.service.addFavorite(marketplaceId, body.productId, body.sellerSku);
   }
 
+  /* ================= ELIMINAR ITEMS FAVORITES ================= */
+
   @Delete(':id/favorites/:productId')
   @ApiOperation({ summary: 'Remove product from favorites' })
   @ApiResponse({ status: 200, description: 'Product removed from favorites' })
   async removeFavorite(@Param('id', ParseIntPipe) marketplaceId: number, @Param('productId') productId: string) {
     return this.service.removeFavorite(marketplaceId, productId);
+  }
+
+  @Delete(':id/favorites')
+  @ApiOperation({ summary: 'Remove multiple products from favorites' })
+  @ApiResponse({
+    status: 200,
+    description: 'Products removed from favorites'
+  })
+  async removeFavoritesBulk(
+    @Param('id', ParseIntPipe) marketplaceId: number,
+    @Body('productIds') productIds: string[]
+  ) {
+    return this.service.removeFavoritesBulk(marketplaceId, productIds);
   }
 
   @Post('favorites/bulk')
@@ -64,11 +80,16 @@ export class MarketplaceFavoritesController {
     return this.service.addFavoritesBulk(body.marketplaceIds, body.items);
   }
 
+  /* ================= Obtener items de una carpeta con filtros y detalle ================= */
+
   @Get(':id/favorites')
-  @ApiOperation({ summary: 'Get favorites from a marketplace folder' })
-  @ApiResponse({ status: 200, description: 'List of favorite products' })
-  async getFavorites(@Param('id', ParseIntPipe) marketplaceId: number) {
-    return this.service.getFavorites(marketplaceId);
+  @ApiOperation({ summary: 'Get favorites with filters, sorting and pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated favorites list'
+  })
+  async getFavorites(@Param('id', ParseIntPipe) marketplaceId: number, @Query() query: GetFavoritesQueryDto) {
+    return this.service.getFavorites(marketplaceId, query);
   }
 
   /* ================= ANALYTICS ================= */

@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { FavoritesFiltersWithPagination } from 'src/app/driver/repositories/mercadolibre/analitics/SQLAnalyticsFavoritesRepository';
 import { ISQLAnalyticsFavoritesRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/ISQLAnalyticsFavoritesRepository';
 
 @Injectable()
@@ -36,14 +37,21 @@ export class MarketplaceFavoritesService {
     return this.repository.addFavorite(marketplaceId, productId, sellerSku);
   }
 
+  /* ================= ELIMINAR ITEMS FAVORITES ================= */
+
   async removeFavorite(marketplaceId: number, productId: string) {
     await this.ensureMarketplaceIsActive(marketplaceId);
 
     return this.repository.removeFavorite(marketplaceId, productId);
   }
 
-  async getFavorites(marketplaceId: number) {
-    return this.repository.getFavorites(marketplaceId);
+  async removeFavoritesBulk(marketplaceId: number, productIds: string[]) {
+    await this.ensureMarketplaceIsActive(marketplaceId);
+
+    return this.repository.removeFavoritesBulk(marketplaceId, productIds);
+  }
+  async getFavorites(marketplaceId: number, filters?: FavoritesFiltersWithPagination) {
+    return this.repository.getFavorites(marketplaceId, filters);
   }
 
   async addFavoritesBulk(marketplaceIds: number[], items: { productId: string; sellerSku: string }[]) {

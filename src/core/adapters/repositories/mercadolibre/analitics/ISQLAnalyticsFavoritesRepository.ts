@@ -1,6 +1,9 @@
+import { FavoritesFiltersWithPagination } from 'src/app/driver/repositories/mercadolibre/analitics/SQLAnalyticsFavoritesRepository';
+
 export interface ISQLAnalyticsFavoritesRepository {
-  getFavorites(marketplaceId: number);
+  getFavorites(marketplaceId: number, filters?: FavoritesFiltersWithPagination);
   removeFavorite(marketplaceId: number, productId: string);
+  removeFavoritesBulk(marketplaceId: number, productIds: string[]): Promise<{ success: boolean; deleted: number }>;
   addFavorite(marketplaceId: number, productId: string, sellerSku: string);
   addFavoritesBulk(
     marketplaceId: number,
