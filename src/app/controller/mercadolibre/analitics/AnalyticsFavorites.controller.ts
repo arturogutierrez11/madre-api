@@ -45,6 +45,17 @@ export class MarketplaceFavoritesController {
   ) {
     return this.service.addFavorite(marketplaceId, body.productId, body.sellerSku);
   }
+  /* ================= Obtener detalle de ITEMS FAVORITES ================= */
+
+  @Get(':id/favorites')
+  @ApiOperation({ summary: 'Get favorites products inside a marketplace folder' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated favorites list'
+  })
+  async getFavorites(@Param('id', ParseIntPipe) marketplaceId: number, @Query() query: GetFavoritesQueryDto) {
+    return this.service.getFavorites(marketplaceId, query);
+  }
 
   /* ================= ELIMINAR ITEMS FAVORITES ================= */
 
