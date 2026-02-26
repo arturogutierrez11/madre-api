@@ -362,41 +362,38 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
   }
   async getMarketplaceCategoriesBreakdown(marketplaceId: number) {
     const sql = `
-    SELECT DISTINCT
-      parent.id   AS categoryId,
-      parent.name AS categoryName,
-      parent.level,
-      parent.path
+    SELECT
+      c.id AS categoryId,
+      c.name AS categoryName,
+      c.level,
+      COUNT(*) AS totalProducts,
+
+      (
+        SELECT GROUP_CONCAT(parent.name ORDER BY parent.level SEPARATOR ' > ')
+        FROM mercadolibre_categories parent
+        WHERE FIND_IN_SET(
+          parent.id,
+          REPLACE(c.path, '.', ',')
+        )
+      ) AS fullPath
 
     FROM marketplace_favorite_products mf
 
     INNER JOIN mercadolibre_products p
       ON p.id = mf.product_id
 
-    INNER JOIN mercadolibre_categories leaf
-      ON leaf.id = p.category_id
-
-    INNER JOIN mercadolibre_categories parent
-      ON FIND_IN_SET(
-        parent.id,
-        REPLACE(leaf.path, '.', ',')
-      )
+    INNER JOIN mercadolibre_categories c
+      ON c.id = p.category_id
 
     WHERE mf.marketplace_id = ?
-      AND parent.level IN (1, 2)
+      AND p.category_id IS NOT NULL
 
-    ORDER BY parent.path ASC
+    GROUP BY c.id, c.name, c.level, c.path
+
+    ORDER BY c.level ASC, totalProducts DESC
   `;
 
-    const rows = await this.entityManager.query(sql, [marketplaceId]);
-
-    return rows.map(r => ({
-      categoryId: r.categoryId,
-      categoryName: r.categoryName,
-      level: Number(r.level),
-      totalProducts: 0,
-      fullPath: r.categoryName
-    }));
+    return this.entityManager.query(sql, [marketplaceId]);
   }
 
   /* ================= Obtener datos de una carpeta ================= */
