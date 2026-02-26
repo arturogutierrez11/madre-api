@@ -73,6 +73,8 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
     return { success: true };
   }
 
+  /* ================= Eliminar items de FAVORITES ================= */
+
   async removeFavorite(marketplaceId: number, productId: string) {
     const sql = `
       DELETE FROM marketplace_favorite_products
@@ -364,7 +366,8 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
       c.id AS categoryId,
       c.name AS categoryName,
       c.level,
-      COUNT(*) AS totalProducts,
+      COUNT(DISTINCT p.id) AS totalProducts,
+      c.path,
 
       (
         SELECT GROUP_CONCAT(parent.name ORDER BY parent.level SEPARATOR ' > ')
@@ -388,11 +391,22 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
 
     GROUP BY c.id, c.name, c.level, c.path
 
-    ORDER BY c.level ASC, totalProducts DESC
+    ORDER BY c.path ASC
   `;
 
-    return this.entityManager.query(sql, [marketplaceId]);
+    const rows = await this.entityManager.query(sql, [marketplaceId]);
+
+    return rows.map(r => ({
+      categoryId: r.categoryId,
+      categoryName: r.categoryName,
+      level: Number(r.level),
+      totalProducts: Number(r.totalProducts),
+      fullPath: r.fullPath
+    }));
   }
+
+  /* ================= Obtener datos de una carpeta ================= */
+
   async getMarketplaceById(id: number) {
     const sql = `
     SELECT id, name, status
