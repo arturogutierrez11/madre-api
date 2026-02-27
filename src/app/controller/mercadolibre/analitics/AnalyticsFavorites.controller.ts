@@ -112,17 +112,17 @@ export class MarketplaceFavoritesController {
     return this.service.getMarketplaceOverview(marketplaceId);
   }
 
-  @Get(':id/full-overview')
-  @ApiOperation({
-    summary: 'Get full overview including metrics, brand breakdown and category breakdown'
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Marketplace full analytics overview'
-  })
-  async getMarketplaceFullOverview(@Param('id', ParseIntPipe) marketplaceId: number) {
-    return this.service.getMarketplaceFullOverview(marketplaceId);
-  }
+  // @Get(':id/full-overview')
+  // @ApiOperation({
+  //   summary: 'Get full overview including metrics, brand breakdown and category breakdown'
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Marketplace full analytics overview'
+  // })
+  // async getMarketplaceFullOverview(@Param('id', ParseIntPipe) marketplaceId: number) {
+  //   return this.service.getMarketplaceFullOverview(marketplaceId);
+  // }
 
   @Delete('marketplaces/:id')
   @ApiOperation({ summary: 'Delete a marketplace folder' })
