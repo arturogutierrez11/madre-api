@@ -46,4 +46,36 @@ export class SQLBrandsMegatoneRepository implements IBrandMatchRepository {
 
     return Number(result[0].total);
   }
+  async upsertBrandMatch(item: BrandsMatchtoMarket): Promise<void> {
+    await this.productosMadreEntityManager.query(
+      `
+    INSERT INTO defaultdb.brands_match_megatone (sku, brand_id, brand_name)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      brand_id = VALUES(brand_id),
+      brand_name = VALUES(brand_name);
+    `,
+      [item.sku, item.brandId, item.brandName]
+    );
+  }
+  async upsertManyBrandMatch(items: BrandsMatchtoMarket[]): Promise<void> {
+    if (!items.length) return;
+
+    const values = items.map(item => [item.sku, item.brandId, item.brandName]);
+
+    const placeholders = values.map(() => '(?, ?, ?)').join(',');
+
+    const flatValues = values.flat();
+
+    await this.productosMadreEntityManager.query(
+      `
+    INSERT INTO defaultdb.brands_match_megatone (sku, brand_id, brand_name)
+    VALUES ${placeholders}
+    ON DUPLICATE KEY UPDATE
+      brand_id = VALUES(brand_id),
+      brand_name = VALUES(brand_name);
+    `,
+      flatValues
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ICategoryMatchRepository } from 'src/core/adapters/repositories/madre/categories/match/ICategoryMatchRepository';
 import { MarketName } from 'src/core/entities/madre/brands/match/MarketName';
+import { CategoriesMatchToMarket } from 'src/core/entities/madre/categories/match/CategoriesMatchToMarket';
 
 @Injectable()
 export class CategoryMatchService {
@@ -9,7 +10,10 @@ export class CategoryMatchService {
     private readonly oncityRepo: ICategoryMatchRepository,
 
     @Inject('CategoriesMegatoneRepository')
-    private readonly megatoneRepo: ICategoryMatchRepository
+    private readonly megatoneRepo: ICategoryMatchRepository,
+
+    @Inject('CategoriesFravegaRepository')
+    private readonly fravegaRepo: ICategoryMatchRepository
   ) {}
 
   private getRepo(market: MarketName): ICategoryMatchRepository {
@@ -18,6 +22,8 @@ export class CategoryMatchService {
         return this.oncityRepo;
       case MarketName.MEGATONE:
         return this.megatoneRepo;
+      case MarketName.FRAVEGA:
+        return this.fravegaRepo;
       default:
         throw new BadRequestException(`Market inválido: ${market}`);
     }
@@ -40,5 +46,25 @@ export class CategoryMatchService {
       nextOffset: hasNext ? offset + limit : null,
       items
     };
+  }
+
+  async saveCategoryMatch(
+    market: MarketName,
+    payload: CategoriesMatchToMarket | CategoriesMatchToMarket[]
+  ): Promise<{ success: boolean }> {
+    const repo = this.getRepo(market);
+
+    if (Array.isArray(payload)) {
+      await repo.upsertManyCategoryMatch(payload);
+    } else {
+      await repo.upsertCategoryMatch(payload);
+    }
+
+    return { success: true };
+  }
+
+  async skuHasCategoryMatch(market: MarketName, sku: string): Promise<boolean> {
+    const repo = this.getRepo(market);
+    return repo.existsSkuCategoryMatch(sku);
   }
 }

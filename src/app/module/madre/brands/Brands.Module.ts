@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BrandsMadreController } from 'src/app/controller/madre/brands/BrandsMadre.Controller';
 import { BrandMatchController } from 'src/app/controller/madre/brands/match/BrandMatch.Controller';
+import { SQLBrandsFravegaRepository } from 'src/app/driver/repositories/madre/brands/match/SQLBrandsFravegaRepository';
 import { SQLBrandsMegatoneRepository } from 'src/app/driver/repositories/madre/brands/match/SQLBrandsMegatoneRepository';
 import { SQLBrandsOncityRepository } from 'src/app/driver/repositories/madre/brands/match/SQLCategoryOncityRepository';
 import { SQLBrandsRepository } from 'src/app/driver/repositories/madre/brands/SQLBrandsRepository';
@@ -38,6 +39,10 @@ import { BrandMatchService } from 'src/app/services/madre/brands/match/BrandMatc
     {
       provide: 'BrandsMegatoneRepository',
       useClass: SQLBrandsMegatoneRepository
+    },
+    {
+      provide: 'BrandsFravegaRepository',
+      useClass: SQLBrandsFravegaRepository
     }
   ]
 })

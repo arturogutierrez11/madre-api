@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiOkResponse, ApiParam, ApiBody } from '@nestjs/swagger';
-import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
-import { BulkAddFavoritesDto } from './dto/BulkAddFavoritesDto';
+import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/categories/AnalyticsCategoriesService';
 
 @ApiTags('Analytics - Categories')
 @Controller('analytics/categories')
@@ -235,5 +234,10 @@ Ejemplo:
       maxRevenue: maxRevenue !== undefined ? Number(maxRevenue) : undefined,
       excludeMarketplace: excludeMarketplaceArray
     });
+  }
+
+  @Post('invalidate')
+  async invalidate() {
+    return this.analyticsService.invalidateAnalyticsCache();
   }
 }

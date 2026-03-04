@@ -11,7 +11,10 @@ export class BrandMatchService {
     private readonly oncityRepo: IBrandMatchRepository,
 
     @Inject('BrandsMegatoneRepository')
-    private readonly megatoneRepo: IBrandMatchRepository
+    private readonly megatoneRepo: IBrandMatchRepository,
+
+    @Inject('BrandsFravegaRepository')
+    private readonly fravegaRepo: IBrandMatchRepository
   ) {}
 
   private getRepo(market: MarketName): IBrandMatchRepository {
@@ -20,6 +23,8 @@ export class BrandMatchService {
         return this.oncityRepo;
       case MarketName.MEGATONE:
         return this.megatoneRepo;
+      case MarketName.FRAVEGA:
+        return this.fravegaRepo;
       default:
         throw new BadRequestException(`Market inválido: ${market}`);
     }
@@ -46,5 +51,19 @@ export class BrandMatchService {
       nextOffset: hasNext ? offset + limit : null,
       items
     };
+  }
+  async saveBrandMatch(
+    market: MarketName,
+    payload: BrandsMatchtoMarket | BrandsMatchtoMarket[]
+  ): Promise<{ success: boolean }> {
+    const repo = this.getRepo(market);
+
+    if (Array.isArray(payload)) {
+      await repo.upsertManyBrandMatch(payload);
+    } else {
+      await repo.upsertBrandMatch(payload);
+    }
+
+    return { success: true };
   }
 }

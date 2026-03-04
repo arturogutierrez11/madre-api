@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoryMadreController } from 'src/app/controller/madre/categories/CategoryMadre.Controller';
 import { CategoryMatchController } from 'src/app/controller/madre/categories/match/CategoryMatch.Controller';
+import { SQLCategoriesFravegaRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesFravegaRepository';
 import { SQLCategoriesMegatoneRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesMegatoneRepository';
 import { SQLCategoriesOncityRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesOncityRepository';
 import { SQLCategoriesRepository } from 'src/app/driver/repositories/madre/categories/SQLCategoriesRepository';
@@ -38,6 +39,10 @@ import { CategoryMatchService } from 'src/app/services/madre/categories/match/Ca
     {
       provide: 'CategoriesMegatoneRepository',
       useClass: SQLCategoriesMegatoneRepository
+    },
+    {
+      provide: 'CategoriesFravegaRepository',
+      useClass: SQLCategoriesFravegaRepository
     }
   ]
 })

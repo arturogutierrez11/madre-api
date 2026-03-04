@@ -1,4 +1,5 @@
 export enum MarketName {
   ONCITY = 'oncity',
-  MEGATONE = 'megatone'
+  MEGATONE = 'megatone',
+  FRAVEGA = 'fravega'
 }

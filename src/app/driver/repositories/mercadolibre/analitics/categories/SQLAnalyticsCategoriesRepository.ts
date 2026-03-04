@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { IAnalyticsCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/IAnalyticsCategoriesRepository';
+import { IAnalyticsCategoriesRepository } from 'src/core/adapters/repositories/mercadolibre/analitics/categories/IAnalyticsCategoriesRepository';
 import { EntityManager } from 'typeorm';
 
 @Injectable()
