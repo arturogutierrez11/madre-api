@@ -76,7 +76,6 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
       flatValues
     );
   }
-
   async existsSkuCategoryMatch(sku: string): Promise<boolean> {
     const result = await this.productosMadreEntityManager.query(
       `
@@ -90,6 +89,6 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
       [sku]
     );
 
-    return Boolean(result[0].exists_match);
+    return Number(result[0].exists_match) === 1;
   }
 }
