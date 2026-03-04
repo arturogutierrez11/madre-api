@@ -3,7 +3,7 @@ import { ICategoryMatchRepository } from 'src/core/adapters/repositories/madre/c
 import { EntityManager } from 'typeorm';
 import { CategoriesMatchToMarket } from 'src/core/entities/madre/categories/match/CategoriesMatchToMarket';
 
-export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
+export class SQLCategoriesFravegaRepository implements ICategoryMatchRepository {
   constructor(
     @InjectEntityManager()
     private readonly productosMadreEntityManager: EntityManager
@@ -17,7 +17,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
         matched_category_id,
         matched_category,
         matched_category_path
-      FROM defaultdb.categories_match_oncity
+      FROM defaultdb.categories_match_fravega
       ORDER BY sku ASC
       LIMIT ? OFFSET ?;
       `,
@@ -35,7 +35,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
   async countCategoriesMatch(): Promise<number> {
     const result = await this.productosMadreEntityManager.query(`
       SELECT COUNT(*) AS total
-      FROM defaultdb.categories_match_oncity;
+      FROM defaultdb.categories_match_fravega;
     `);
 
     return Number(result[0].total);
@@ -44,7 +44,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
   async upsertCategoryMatch(item: CategoriesMatchToMarket): Promise<void> {
     await this.productosMadreEntityManager.query(
       `
-    INSERT INTO defaultdb.categories_match_oncity
+    INSERT INTO defaultdb.categories_match_fravega 
       (sku, matched_category_id, matched_category, matched_category_path)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
@@ -55,6 +55,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
       [item.sku, item.categoryId, item.categoryName, item.categoryPath]
     );
   }
+
   async upsertManyCategoryMatch(items: CategoriesMatchToMarket[]): Promise<void> {
     if (!items.length) return;
 
@@ -65,7 +66,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
 
     await this.productosMadreEntityManager.query(
       `
-    INSERT INTO defaultdb.categories_match_oncity
+    INSERT INTO defaultdb.categories_match_fravega
       (sku, matched_category_id, matched_category, matched_category_path)
     VALUES ${placeholders}
     ON DUPLICATE KEY UPDATE
@@ -82,7 +83,7 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
       `
     SELECT EXISTS(
       SELECT 1
-      FROM defaultdb.categories_match_oncity
+      FROM defaultdb.categories_match_fravega
       WHERE sku = ?
       LIMIT 1
     ) AS exists_match;

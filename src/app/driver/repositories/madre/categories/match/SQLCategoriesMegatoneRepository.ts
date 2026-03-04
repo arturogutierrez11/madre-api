@@ -40,4 +40,56 @@ export class SQLCategoriesMegatoneRepository implements ICategoryMatchRepository
 
     return Number(result[0].total);
   }
+
+  async upsertCategoryMatch(item: CategoriesMatchToMarket): Promise<void> {
+    await this.productosMadreEntityManager.query(
+      `
+    INSERT INTO defaultdb.categories_match_megatone
+      (sku, matched_category_id, matched_category, matched_category_path)
+    VALUES (?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      matched_category_id = VALUES(matched_category_id),
+      matched_category = VALUES(matched_category),
+      matched_category_path = VALUES(matched_category_path);
+    `,
+      [item.sku, item.categoryId, item.categoryName, item.categoryPath]
+    );
+  }
+  async upsertManyCategoryMatch(items: CategoriesMatchToMarket[]): Promise<void> {
+    if (!items.length) return;
+
+    const values = items.map(item => [item.sku, item.categoryId, item.categoryName, item.categoryPath]);
+
+    const placeholders = values.map(() => '(?, ?, ?, ?)').join(',');
+    const flatValues = values.flat();
+
+    await this.productosMadreEntityManager.query(
+      `
+    INSERT INTO defaultdb.categories_match_megatone
+      (sku, matched_category_id, matched_category, matched_category_path)
+    VALUES ${placeholders}
+    ON DUPLICATE KEY UPDATE
+      matched_category_id = VALUES(matched_category_id),
+      matched_category = VALUES(matched_category),
+      matched_category_path = VALUES(matched_category_path);
+    `,
+      flatValues
+    );
+  }
+
+  async existsSkuCategoryMatch(sku: string): Promise<boolean> {
+    const result = await this.productosMadreEntityManager.query(
+      `
+    SELECT EXISTS(
+      SELECT 1
+      FROM defaultdb.categories_match_megatone
+      WHERE sku = ?
+      LIMIT 1
+    ) AS exists_match;
+    `,
+      [sku]
+    );
+
+    return Boolean(result[0].exists_match);
+  }
 }

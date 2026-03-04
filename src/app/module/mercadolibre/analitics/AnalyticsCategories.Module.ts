@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AnalyticsCategoriesController } from 'src/app/controller/mercadolibre/analitics/AnalyticsCategories.Controller';
-import { SQLAnalyticsCategoriesRepository } from 'src/app/driver/repositories/mercadolibre/analitics/SQLAnalyticsCategoriesRepository';
+import { SQLAnalyticsCacheCategoriesRepository } from 'src/app/driver/repositories/mercadolibre/analitics/categories/SQLAnalyticsCacheCategoriesRepository';
+import { SQLAnalyticsCategoriesRepository } from 'src/app/driver/repositories/mercadolibre/analitics/categories/SQLAnalyticsCategoriesRepository';
 import { SQLMercadoLibreCategoriesRepository } from 'src/app/driver/repositories/mercadolibre/categories/SQLMercadoLibreCategoriesRepository';
-import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/AnalyticsCategoriesService';
+import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analitics/categories/AnalyticsCategoriesService';
 
 @Module({
   controllers: [AnalyticsCategoriesController],
@@ -17,6 +18,10 @@ import { AnalyticsCategoriesService } from 'src/app/services/mercadolibre/analit
     {
       provide: 'ISQLMercadoLibreCategoriesRepository',
       useClass: SQLMercadoLibreCategoriesRepository
+    },
+    {
+      provide: 'ISQLAnalyticsCacheCategoriesRepository',
+      useClass: SQLAnalyticsCacheCategoriesRepository
     }
   ],
 

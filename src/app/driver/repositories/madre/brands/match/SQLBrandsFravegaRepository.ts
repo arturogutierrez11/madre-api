@@ -1,11 +1,11 @@
-import { Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { IBrandMatchRepository } from 'src/core/adapters/repositories/madre/brands/match/IBrandMatchRepository';
-import { BrandsMatchtoMarket } from 'src/core/entities/madre/brands/match/BrandsMatchtoMarket';
 import { EntityManager } from 'typeorm';
+import { IBrandMatchRepository } from 'src/core/adapters/repositories/madre/brands/match/IBrandMatchRepository';
+import { Logger } from '@nestjs/common';
+import { BrandsMatchtoMarket } from 'src/core/entities/madre/brands/match/BrandsMatchtoMarket';
 
-export class SQLBrandsOncityRepository implements IBrandMatchRepository {
-  private readonly logger = new Logger(SQLBrandsOncityRepository.name);
+export class SQLBrandsFravegaRepository implements IBrandMatchRepository {
+  private readonly logger = new Logger(SQLBrandsFravegaRepository.name);
 
   constructor(
     @InjectEntityManager()
@@ -20,7 +20,7 @@ export class SQLBrandsOncityRepository implements IBrandMatchRepository {
           sku,
           brand_id,
           brand_name
-        FROM defaultdb.brand_match_oncity
+        FROM defaultdb.brand_match_fravega
         ORDER BY sku ASC
         LIMIT ? OFFSET ?;
         `,
@@ -41,7 +41,7 @@ export class SQLBrandsOncityRepository implements IBrandMatchRepository {
   async countBrandsMatch(): Promise<number> {
     const result = await this.productosMadreEntityManager.query(`
       SELECT COUNT(*) AS total
-      FROM defaultdb.brand_match_oncity;
+      FROM defaultdb.brand_match_fravega;
     `);
 
     return Number(result[0].total);
@@ -50,7 +50,7 @@ export class SQLBrandsOncityRepository implements IBrandMatchRepository {
   async upsertBrandMatch(item: BrandsMatchtoMarket): Promise<void> {
     await this.productosMadreEntityManager.query(
       `
-    INSERT INTO defaultdb.brand_match_oncity (sku, brand_id, brand_name)
+    INSERT INTO defaultdb.brand_match_fravega (sku, brand_id, brand_name)
     VALUES (?, ?, ?)
     ON DUPLICATE KEY UPDATE
       brand_id = VALUES(brand_id),
@@ -70,7 +70,7 @@ export class SQLBrandsOncityRepository implements IBrandMatchRepository {
 
     await this.productosMadreEntityManager.query(
       `
-    INSERT INTO defaultdb.brand_match_oncity (sku, brand_id, brand_name)
+    INSERT INTO defaultdb.brand_match_fravega (sku, brand_id, brand_name)
     VALUES ${placeholders}
     ON DUPLICATE KEY UPDATE
       brand_id = VALUES(brand_id),
