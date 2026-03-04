@@ -90,6 +90,6 @@ export class SQLCategoriesMegatoneRepository implements ICategoryMatchRepository
       [sku]
     );
 
-    return Boolean(result[0].exists_match);
+    return Number(result[0].exists_match) === 1;
   }
 }
