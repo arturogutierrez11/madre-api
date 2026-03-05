@@ -1,13 +1,17 @@
 import { Body, Controller, Get, Param, ParseEnumPipe, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CategoryMatchService } from 'src/app/services/madre/categories/match/CategoryMatchService';
+import { TreeCategoriesServices } from 'src/app/services/madre/categories/match/fravegaCategoriesProcess/TreeCategoriesService';
 import { MarketName } from 'src/core/entities/madre/brands/match/MarketName';
 import { CategoriesMatchToMarket } from 'src/core/entities/madre/categories/match/CategoriesMatchToMarket';
 
 @ApiTags('categories')
 @Controller('categories')
 export class CategoryMatchController {
-  constructor(private readonly categoryMatchService: CategoryMatchService) {}
+  constructor(
+    private readonly categoryMatchService: CategoryMatchService,
+    private readonly treeCategoriesServices: TreeCategoriesServices
+  ) {}
 
   @Get(':market/match')
   @ApiParam({
@@ -92,5 +96,22 @@ export class CategoryMatchController {
     @Body() body: CategoriesMatchToMarket | CategoriesMatchToMarket[]
   ) {
     return this.categoryMatchService.saveCategoryMatch(market, body);
+  }
+
+  @ApiOperation({
+    summary:
+      'Deveuvel el arbol de categorias ordenado por ramas (hicimos esto por que fravega lo devuelve todo desordenado)'
+  })
+  @Get('fravegaTree')
+  async getAllFravegaTree() {
+    return this.treeCategoriesServices.getFravegaCategoriesTree();
+  }
+
+  @Get('fravega/:id/attributes')
+  @ApiOperation({
+    summary: 'Obtiene atributos de una categoría de Fravega'
+  })
+  async getFravegaCategoryAttributes(@Param('id') categoryId: string) {
+    return this.treeCategoriesServices.getCategoryAttributes(categoryId);
   }
 }

@@ -3,12 +3,14 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoryMadreController } from 'src/app/controller/madre/categories/CategoryMadre.Controller';
 import { CategoryMatchController } from 'src/app/controller/madre/categories/match/CategoryMatch.Controller';
+import { SLQTreeCategories } from 'src/app/driver/repositories/madre/categories/match/fravegacategories-process/SLQTreeCategories';
 import { SQLCategoriesFravegaRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesFravegaRepository';
 import { SQLCategoriesMegatoneRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesMegatoneRepository';
 import { SQLCategoriesOncityRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesOncityRepository';
 import { SQLCategoriesRepository } from 'src/app/driver/repositories/madre/categories/SQLCategoriesRepository';
 import { CategoryMadreService } from 'src/app/services/madre/categories/CategoryMadreService';
 import { CategoryMatchService } from 'src/app/services/madre/categories/match/CategoryMatchService';
+import { TreeCategoriesServices } from 'src/app/services/madre/categories/match/fravegaCategoriesProcess/TreeCategoriesService';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { CategoryMatchService } from 'src/app/services/madre/categories/match/Ca
   providers: [
     CategoryMatchService,
     CategoryMadreService,
+    TreeCategoriesServices,
 
     {
       provide: 'CategoriesMadreRepository',
@@ -43,6 +46,10 @@ import { CategoryMatchService } from 'src/app/services/madre/categories/match/Ca
     {
       provide: 'CategoriesFravegaRepository',
       useClass: SQLCategoriesFravegaRepository
+    },
+    {
+      provide: 'ISLQTreeCategories',
+      useClass: SLQTreeCategories
     }
   ]
 })

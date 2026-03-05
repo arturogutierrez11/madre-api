@@ -93,4 +93,41 @@ export class SQLCategoriesFravegaRepository implements ICategoryMatchRepository 
 
     return Number(result[0].exists_match) === 1;
   }
+
+  async getCategoriesTree(): Promise<any[]> {
+    const rows = await this.productosMadreEntityManager.query(`
+    SELECT id, name, parent_id
+    FROM defaultdb.fravega_categories
+    ORDER BY name ASC
+  `);
+
+    const map = new Map<string, any>();
+    const roots: any[] = [];
+
+    for (const row of rows) {
+      map.set(row.id, {
+        id: row.id,
+        name: row.name,
+        children: []
+      });
+    }
+
+    for (const row of rows) {
+      const node = map.get(row.id);
+
+      if (row.parent_id) {
+        const parent = map.get(row.parent_id);
+
+        if (parent) {
+          parent.children.push(node);
+        } else {
+          roots.push(node);
+        }
+      } else {
+        roots.push(node);
+      }
+    }
+
+    return roots;
+  }
 }
