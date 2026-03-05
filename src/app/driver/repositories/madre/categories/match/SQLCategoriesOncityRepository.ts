@@ -31,7 +31,6 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
       categoryPath: row.matched_category_path
     }));
   }
-
   async countCategoriesMatch(): Promise<number> {
     const result = await this.productosMadreEntityManager.query(`
       SELECT COUNT(*) AS total
@@ -40,7 +39,6 @@ export class SQLCategoriesOncityRepository implements ICategoryMatchRepository {
 
     return Number(result[0].total);
   }
-
   async upsertCategoryMatch(item: CategoriesMatchToMarket): Promise<void> {
     await this.productosMadreEntityManager.query(
       `
