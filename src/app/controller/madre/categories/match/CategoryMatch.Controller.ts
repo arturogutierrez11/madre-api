@@ -1,7 +1,10 @@
 import { Body, Controller, Get, Param, ParseEnumPipe, Post, Query } from '@nestjs/common';
+
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+
 import { CategoryMatchService } from 'src/app/services/madre/categories/match/CategoryMatchService';
 import { TreeCategoriesServices } from 'src/app/services/madre/categories/match/fravegaCategoriesProcess/TreeCategoriesService';
+
 import { MarketName } from 'src/core/entities/madre/brands/match/MarketName';
 import { CategoriesMatchToMarket } from 'src/core/entities/madre/categories/match/CategoriesMatchToMarket';
 
@@ -12,6 +15,10 @@ export class CategoryMatchController {
     private readonly categoryMatchService: CategoryMatchService,
     private readonly treeCategoriesServices: TreeCategoriesServices
   ) {}
+
+  // =========================
+  // SKU CATEGORY MATCH
+  // =========================
 
   @Get(':market/match')
   @ApiParam({
@@ -33,14 +40,6 @@ export class CategoryMatchController {
   @ApiOperation({
     summary: 'Verifica si un SKU tiene categoría matcheada'
   })
-  @ApiParam({
-    name: 'market',
-    enum: MarketName
-  })
-  @ApiParam({
-    name: 'sku',
-    example: 'B002UTY3ES'
-  })
   async skuHasCategoryMatch(
     @Param('market', new ParseEnumPipe(MarketName)) market: MarketName,
     @Param('sku') sku: string
@@ -57,40 +56,6 @@ export class CategoryMatchController {
   @ApiOperation({
     summary: 'Crear o actualizar match de categorías (single o bulk)'
   })
-  @ApiParam({
-    name: 'market',
-    enum: MarketName
-  })
-  @ApiBody({
-    description: 'Puede enviar un objeto o un array',
-    schema: {
-      oneOf: [
-        {
-          type: 'object',
-          properties: {
-            sku: { type: 'string', example: 'B07XLV1XKC' },
-            categoryId: { type: 'string', example: 'MLA5725' },
-            categoryName: { type: 'string', example: 'Accesorios para Vehículos' },
-            categoryPath: { type: 'string', example: 'MLA1000>MLA5725' }
-          },
-          required: ['sku', 'categoryId', 'categoryName', 'categoryPath']
-        },
-        {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              sku: { type: 'string', example: 'B07XLV1XKC' },
-              categoryId: { type: 'string', example: 'MLA5725' },
-              categoryName: { type: 'string', example: 'Accesorios para Vehículos' },
-              categoryPath: { type: 'string', example: 'MLA1000>MLA5725' }
-            },
-            required: ['sku', 'categoryId', 'categoryName', 'categoryPath']
-          }
-        }
-      ]
-    }
-  })
   async createCategoryMatch(
     @Param('market', new ParseEnumPipe(MarketName)) market: MarketName,
     @Body() body: CategoriesMatchToMarket | CategoriesMatchToMarket[]
@@ -98,11 +63,14 @@ export class CategoryMatchController {
     return this.categoryMatchService.saveCategoryMatch(market, body);
   }
 
-  @ApiOperation({
-    summary:
-      'Deveuvel el arbol de categorias ordenado por ramas (hicimos esto por que fravega lo devuelve todo desordenado)'
-  })
+  // =========================
+  // FRAVEGA TREE
+  // =========================
+
   @Get('fravegaTree')
+  @ApiOperation({
+    summary: 'Devuelve árbol de categorías de Fravega'
+  })
   async getAllFravegaTree() {
     return this.treeCategoriesServices.getFravegaCategoriesTree();
   }
@@ -113,5 +81,67 @@ export class CategoryMatchController {
   })
   async getFravegaCategoryAttributes(@Param('id') categoryId: string) {
     return this.treeCategoriesServices.getCategoryAttributes(categoryId);
+  }
+
+  // =========================
+  // MELI → FRAVEGA CATEGORY MATCH
+  // =========================
+
+  @Get('meli/match')
+  @ApiOperation({
+    summary: 'Obtiene todos los matches ML → Fravega'
+  })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getAllMeliMatches(@Query('page') page = 1, @Query('limit') limit = 50) {
+    return this.treeCategoriesServices.getAllMeliCategoryMatches(Number(page), Number(limit));
+  }
+
+  @Get('meli/match/:meliCategoryId')
+  @ApiOperation({
+    summary: 'Obtiene match ML → Fravega por categoría ML'
+  })
+  async getMeliCategoryMatch(@Param('meliCategoryId') meliCategoryId: string) {
+    return this.treeCategoriesServices.findByMeliCategoryId(meliCategoryId);
+  }
+
+  @Get('meli/match/exists/:meliCategoryId')
+  @ApiOperation({
+    summary: 'Verifica si una categoría ML ya tiene match'
+  })
+  async existsMeliCategoryMatch(@Param('meliCategoryId') meliCategoryId: string) {
+    return this.treeCategoriesServices.existsMeliCategoryMatch(meliCategoryId);
+  }
+
+  @Post('meli/match')
+  @ApiOperation({
+    summary: 'Crear o actualizar match ML → Fravega'
+  })
+  async createMeliCategoryMatch(
+    @Body()
+    body: {
+      meliCategoryId: string;
+      meliCategoryPath: string;
+      fravegaCategoryId: string;
+      fravegaCategoryPath: string;
+    }
+  ) {
+    return this.treeCategoriesServices.saveMeliCategoryMatch(body);
+  }
+
+  @Post('meli/match/bulk')
+  @ApiOperation({
+    summary: 'Crear o actualizar múltiples matches ML → Fravega'
+  })
+  async createBulkMeliCategoryMatch(
+    @Body()
+    body: {
+      meliCategoryId: string;
+      meliCategoryPath: string;
+      fravegaCategoryId: string;
+      fravegaCategoryPath: string;
+    }[]
+  ) {
+    return this.treeCategoriesServices.saveManyMeliCategoryMatch(body);
   }
 }
