@@ -15,6 +15,8 @@ import { AnalyticsCategoriesModule } from './module/mercadolibre/analitics/Analy
 import { AnalyticsModule } from './module/mercadolibre/analitics/AnalyticsProducts.Module';
 import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/AnalyticsBrands.Module';
 import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/AnalitycsFavorites.Module';
+import { PublicationRunsModule } from './module/madre/publisher/publication_Run/PublicationRuns.Module';
+import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs/PublicationJobs.Module';
 
 @Module({
   imports: [
@@ -35,7 +37,12 @@ import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/Anal
     AnalyticsCategoriesModule,
     AnalyticsModule,
     AnalyticsBrandsModule,
-    MarketplaceFavoritesModule
+    MarketplaceFavoritesModule,
+
+    // PUBLCIADOR:
+    // modulo de la tabla de publication_run
+    PublicationRunsModule,
+    PublicationJobsModule
   ]
 })
 export class AppModule {}

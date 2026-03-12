@@ -251,28 +251,49 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
   async saveSelectionToFolder(marketplaceId: number, filters: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(filters);
 
-    const sql = `
-      INSERT INTO marketplace_favorite_products
-        (product_id, seller_sku, marketplace_id)
+    const selectSql = `
+    SELECT DISTINCT
+      p.id,
+      p.seller_sku
+    FROM mercadolibre_products p
+    JOIN mercadolibre_categories c ON c.id = p.category_id
+    LEFT JOIN (
+      SELECT item_id, SUM(total_visits) total_visits
+      FROM mercadolibre_item_visits
+      GROUP BY item_id
+    ) v ON v.item_id = p.id
+    ${whereClause}
+  `;
 
-      SELECT
-        p.id,
-        p.seller_sku,
-        ?
+    const products: { id: string; seller_sku: string }[] = await this.entityManager.query(selectSql, values);
 
-      FROM mercadolibre_products p
-      JOIN mercadolibre_categories c ON c.id = p.category_id
-      LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+    const chunkSize = 2000;
 
-      ${whereClause}
+    for (let i = 0; i < products.length; i += chunkSize) {
+      const chunk = products.slice(i, i + chunkSize);
 
-      ON DUPLICATE KEY UPDATE
-        seller_sku = VALUES(seller_sku)
-    `;
+      const placeholders = chunk.map(() => '(?,?,?)').join(',');
 
-    await this.entityManager.query(sql, [marketplaceId, ...values]);
+      const params: any[] = [];
 
-    return { success: true };
+      chunk.forEach(p => {
+        params.push(p.id, p.seller_sku, marketplaceId);
+      });
+
+      await this.entityManager.query(
+        `
+      INSERT IGNORE INTO marketplace_favorite_products
+      (product_id, seller_sku, marketplace_id)
+      VALUES ${placeholders}
+      `,
+        params
+      );
+    }
+
+    return {
+      success: true,
+      totalProducts: products.length
+    };
   }
 
   /* ============================================================
