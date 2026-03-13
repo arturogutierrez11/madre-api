@@ -98,6 +98,56 @@ export class MarketplaceProductsBulkController {
     return this.productSyncRepository.findHistoryBySellerSku('megatone', sellerSku);
   }
 
+  /* ====================================================
+  BUSCAR CANTIDAD DE PRODUCTOS EN CADA ESTADO POR MARKETPLACE
+  ======================================================*/
+
+  @Get(':marketplace/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resumen de productos por estado por marketplace en sync_items',
+    description: `
+Devuelve la cantidad de productos en **product_sync_items**
+agrupados por estado para un marketplace determinado.
+
+Estados incluidos:
+- ACTIVE
+- PAUSED
+- PENDING
+- ERROR
+- DELETED
+    `
+  })
+  @ApiParam({
+    name: 'marketplace',
+    example: 'megatone',
+    description: 'Marketplace a consultar (ej: megatone, oncity, etc)',
+    required: true
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resumen de productos por estado',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            example: 'ACTIVE'
+          },
+          total: {
+            type: 'number',
+            example: 376
+          }
+        }
+      }
+    }
+  })
+  async getStatusSummary(@Param('marketplace') marketplace: string) {
+    return this.productSyncRepository.countSyncItemsByStatus(marketplace);
+  }
+
   /* =====================================================
      UPDATE MANUAL (SELLER SKU)
   ===================================================== */
@@ -189,51 +239,5 @@ export class MarketplaceProductsBulkController {
       hasNext: parsedOffset + parsedLimit < total,
       nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
     };
-  }
-
-  @Get(':marketplace/status')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Resumen de productos por estado por marketplace en sync_items',
-    description: `
-Devuelve la cantidad de productos en **product_sync_items**
-agrupados por estado para un marketplace determinado.
-
-Estados incluidos:
-- ACTIVE
-- PAUSED
-- PENDING
-- ERROR
-- DELETED
-    `
-  })
-  @ApiParam({
-    name: 'marketplace',
-    example: 'megatone',
-    description: 'Marketplace a consultar (ej: megatone, oncity, etc)',
-    required: true
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Resumen de productos por estado',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          status: {
-            type: 'string',
-            example: 'ACTIVE'
-          },
-          total: {
-            type: 'number',
-            example: 376
-          }
-        }
-      }
-    }
-  })
-  async getStatusSummary(@Param('marketplace') marketplace: string) {
-    return this.productSyncRepository.countSyncItemsByStatus(marketplace);
   }
 }
