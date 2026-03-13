@@ -82,6 +82,40 @@ export class MarketplaceFavoritesService {
     return this.repository.getMarketplaceCategoriesBreakdown(marketplaceId);
   }
 
+  async getMarketplaceBrands(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  ) {
+    const marketplace = await this.repository.getMarketplaceById(marketplaceId);
+
+    if (!marketplace) {
+      throw new NotFoundException('Marketplace not found');
+    }
+
+    return this.repository.getMarketplaceBrands(marketplaceId, params);
+  }
+
+  async getMarketplaceCategories(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  ) {
+    const marketplace = await this.repository.getMarketplaceById(marketplaceId);
+
+    if (!marketplace) {
+      throw new NotFoundException('Marketplace not found');
+    }
+
+    return this.repository.getMarketplaceCategories(marketplaceId, params);
+  }
+
   async getMarketplaceFullOverview(marketplaceId: number) {
     const [overview, brands, categories] = await Promise.all([
       this.repository.getMarketplaceOverview(marketplaceId),

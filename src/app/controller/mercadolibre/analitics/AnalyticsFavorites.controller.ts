@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Delete, Query } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MarketplaceFavoritesService } from 'src/app/services/mercadolibre/analitics/AnalitycsFavoritesService';
 import { UpdateMarketplaceStatusDto } from './dto/UpdateMarketplaceStatusDto';
 import { GetFavoritesQueryDto } from './dto/favorites/getFavorites.dto';
@@ -110,6 +110,39 @@ export class MarketplaceFavoritesController {
   })
   async getMarketplaceOverview(@Param('id', ParseIntPipe) marketplaceId: number) {
     return this.service.getMarketplaceOverview(marketplaceId);
+  }
+
+  @Get(':id/brands')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  getBrands(
+    @Param('id') marketplaceId: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string
+  ) {
+    return this.service.getMarketplaceBrands(marketplaceId, {
+      page,
+      limit,
+      search
+    });
+  }
+  @Get(':id/categories')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  getCategories(
+    @Param('id') marketplaceId: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string
+  ) {
+    return this.service.getMarketplaceCategories(marketplaceId, {
+      page,
+      limit,
+      search
+    });
   }
 
   // @Get(':id/full-overview')

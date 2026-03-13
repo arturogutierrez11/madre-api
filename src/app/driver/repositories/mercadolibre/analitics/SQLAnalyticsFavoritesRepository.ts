@@ -396,6 +396,136 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
     return this.entityManager.query(sql, [marketplaceId]);
   }
 
+  async getMarketplaceBrands(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  ) {
+    const values: any[] = [marketplaceId];
+    let where = `
+    WHERE mf.marketplace_id = ?
+    AND p.brand IS NOT NULL
+    AND p.brand <> ''
+  `;
+
+    if (params?.search) {
+      where += ` AND p.brand LIKE ?`;
+      values.push(`%${params.search}%`);
+    }
+
+    const page = Number(params?.page ?? 1);
+    const limit = Number(params?.limit ?? 20);
+    const offset = (page - 1) * limit;
+
+    const countSql = `
+    SELECT COUNT(DISTINCT p.brand) as total
+    FROM marketplace_favorite_products mf
+    INNER JOIN mercadolibre_products p
+      ON p.id = mf.product_id
+    ${where}
+  `;
+
+    const [countResult] = await this.entityManager.query(countSql, values);
+    const total = Number(countResult.total);
+
+    const sql = `
+    SELECT
+      p.brand,
+      COUNT(*) AS totalProducts
+    FROM marketplace_favorite_products mf
+    INNER JOIN mercadolibre_products p
+      ON p.id = mf.product_id
+    ${where}
+    GROUP BY p.brand
+    ORDER BY totalProducts DESC
+    LIMIT ? OFFSET ?
+  `;
+
+    const data = await this.entityManager.query(sql, [...values, limit, offset]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async getMarketplaceCategories(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  ) {
+    const values: any[] = [marketplaceId];
+
+    let where = `
+    WHERE mf.marketplace_id = ?
+    AND p.category_id IS NOT NULL
+  `;
+
+    if (params?.search) {
+      where += ` AND c.name LIKE ?`;
+      values.push(`%${params.search}%`);
+    }
+
+    const page = Number(params?.page ?? 1);
+    const limit = Number(params?.limit ?? 20);
+    const offset = (page - 1) * limit;
+
+    const countSql = `
+    SELECT COUNT(DISTINCT c.id) as total
+    FROM marketplace_favorite_products mf
+    INNER JOIN mercadolibre_products p
+      ON p.id = mf.product_id
+    INNER JOIN mercadolibre_categories c
+      ON c.id = p.category_id
+    ${where}
+  `;
+
+    const [countResult] = await this.entityManager.query(countSql, values);
+    const total = Number(countResult.total);
+
+    const sql = `
+   SELECT
+  c.id AS categoryId,
+  c.name AS categoryName,
+  c.level,
+  COUNT(*) AS totalProducts,
+  c.path
+FROM marketplace_favorite_products mf
+INNER JOIN mercadolibre_products p
+  ON p.id = mf.product_id
+INNER JOIN mercadolibre_categories c
+  ON c.id = p.category_id
+WHERE mf.marketplace_id = ?
+AND p.category_id IS NOT NULL
+GROUP BY c.id, c.name, c.level, c.path
+ORDER BY totalProducts DESC
+LIMIT ? OFFSET ?
+  `;
+
+    const data = await this.entityManager.query(sql, [...values, limit, offset]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
   /* ================= Obtener datos de una carpeta ================= */
 
   async getMarketplaceById(id: number) {

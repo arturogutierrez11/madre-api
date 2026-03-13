@@ -27,4 +27,20 @@ export interface ISQLAnalyticsFavoritesRepository {
   getMarketplaceById(id: number);
   updateMarketplaceStatus(id: number, status: 'active' | 'closed');
   deleteMarketplace(id: number): Promise<{ success: boolean }>;
+  getMarketplaceBrands(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  );
+  getMarketplaceCategories(
+    marketplaceId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  );
 }
