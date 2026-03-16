@@ -18,4 +18,6 @@ export interface IAnalyticsBrandsRepository {
       totalVisits: number;
     }[];
   }>;
+
+  getBrandsListPaginated(params: { page?: number; limit?: number });
 }
