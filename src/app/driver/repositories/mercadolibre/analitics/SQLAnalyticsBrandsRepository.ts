@@ -84,4 +84,49 @@ export class SQLAnalyticsBrandsRepository implements IAnalyticsBrandsRepository 
       }))
     };
   }
+
+  async getBrandsListPaginated(params: { page?: number; limit?: number }) {
+    const { page = 1, limit = 50 } = params;
+
+    const safeLimit = Number(limit);
+    const safePage = Number(page);
+    const offset = (safePage - 1) * safeLimit;
+
+    /* ================= COUNT ================= */
+
+    const countSql = `
+    SELECT COUNT(DISTINCT brand) as total
+    FROM mercadolibre_products
+    WHERE brand IS NOT NULL
+  `;
+
+    const countResult = await this.entityManager.query(countSql);
+    const total = Number(countResult[0].total);
+    const totalPages = Math.ceil(total / safeLimit);
+
+    /* ================= DATA ================= */
+
+    const dataSql = `
+    SELECT DISTINCT brand
+    FROM mercadolibre_products
+    WHERE brand IS NOT NULL
+    ORDER BY brand ASC
+    LIMIT ?
+    OFFSET ?
+  `;
+
+    const rows = await this.entityManager.query(dataSql, [safeLimit, offset]);
+
+    return {
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages
+      },
+      items: rows.map((r: any) => ({
+        brand: r.brand
+      }))
+    };
+  }
 }

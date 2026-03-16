@@ -12,8 +12,13 @@ export class GetAnalyticsBrands {
     private readonly productsRepository: IAnalyticsProductsRepository
   ) {}
 
-  // 🔵 Listado de marcas
+  // 🔵 Listado de marcas con métricas
   async getBrands(params: Parameters<IAnalyticsBrandsRepository['getBrands']>[0]) {
     return this.brandsRepository.getBrands(params);
+  }
+
+  // 🔵 Listado simple de todas las marcas (paginado)
+  async getAllBrands(params: { page?: number; limit?: number }) {
+    return this.brandsRepository.getBrandsListPaginated(params);
   }
 }
