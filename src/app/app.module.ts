@@ -17,6 +17,7 @@ import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/Analytics
 import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/AnalitycsFavorites.Module';
 import { PublicationRunsModule } from './module/madre/publisher/publication_Run/PublicationRuns.Module';
 import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs/PublicationJobs.Module';
+import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandMatch.Module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs
     AnalyticsModule,
     AnalyticsBrandsModule,
     MarketplaceFavoritesModule,
+    BrandMatchModule,
 
     // PUBLCIADOR:
     // modulo de la tabla de publication_run
