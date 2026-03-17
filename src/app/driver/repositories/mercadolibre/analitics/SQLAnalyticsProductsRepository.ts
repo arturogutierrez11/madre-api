@@ -211,25 +211,34 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     const { whereClause, values } = await this.buildFilters(params);
 
     const sql = `
-      SELECT
-        COUNT(DISTINCT p.id) AS totalProducts,
-        COALESCE(SUM(p.sold_quantity), 0) AS totalOrders,
-        COALESCE(SUM(v.total_visits), 0) AS totalVisits,
-        COALESCE(SUM(p.price * p.sold_quantity), 0) AS totalRevenue,
-        COALESCE(AVG(p.price), 0) AS avgPrice,
+    SELECT
+      COUNT(DISTINCT CASE 
+        WHEN p.seller_sku IS NOT NULL 
+          AND p.seller_sku != ''
+          AND LENGTH(p.seller_sku) <= 13 
+        THEN p.seller_sku 
+      END) AS totalProducts,
 
-        CASE
-          WHEN SUM(p.sold_quantity) > 0
-          THEN SUM(p.price * p.sold_quantity) / SUM(p.sold_quantity)
-          ELSE 0
-        END AS avgTicket
+      COALESCE(SUM(p.sold_quantity), 0) AS totalOrders,
 
-      FROM mercadolibre_products p
-      JOIN mercadolibre_categories c ON c.id = p.category_id
-      LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+      COALESCE(SUM(v.total_visits), 0) AS totalVisits,
 
-      ${whereClause}
-    `;
+      COALESCE(SUM(p.price * p.sold_quantity), 0) AS totalRevenue,
+
+      COALESCE(AVG(p.price), 0) AS avgPrice,
+
+      CASE
+        WHEN SUM(p.sold_quantity) > 0
+        THEN SUM(p.price * p.sold_quantity) / SUM(p.sold_quantity)
+        ELSE 0
+      END AS avgTicket
+
+    FROM mercadolibre_products p
+    JOIN mercadolibre_categories c ON c.id = p.category_id
+    LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
+
+    ${whereClause}
+  `;
 
     const result = await this.entityManager.query(sql, values);
     const row = result[0] ?? {};
