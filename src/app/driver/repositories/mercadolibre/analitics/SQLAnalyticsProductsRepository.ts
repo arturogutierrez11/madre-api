@@ -251,32 +251,38 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
   async saveSelectionToFolder(marketplaceId: number, filters: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(filters);
 
-    const selectSql = `
-    SELECT DISTINCT
-      p.id,
-      p.seller_sku
-    FROM mercadolibre_products p
-    JOIN mercadolibre_categories c ON c.id = p.category_id
-    LEFT JOIN (
-      SELECT item_id, SUM(total_visits) total_visits
-      FROM mercadolibre_item_visits
-      GROUP BY item_id
-    ) v ON v.item_id = p.id
-    ${whereClause}
-  `;
+    const batchSize = 5000;
+    let offset = 0;
+    let totalInserted = 0;
 
-    const products: { id: string; seller_sku: string }[] = await this.entityManager.query(selectSql, values);
+    while (true) {
+      const selectSql = `
+      SELECT
+        MIN(p.id) as id,
+        TRIM(UPPER(SUBSTRING_INDEX(p.seller_sku, '/', 1))) as seller_sku
+      FROM mercadolibre_products p
+      JOIN mercadolibre_categories c ON c.id = p.category_id
+      LEFT JOIN (
+        SELECT item_id, SUM(total_visits) total_visits
+        FROM mercadolibre_item_visits
+        GROUP BY item_id
+      ) v ON v.item_id = p.id
+      ${whereClause}
+      AND p.seller_sku IS NOT NULL
+      AND p.seller_sku != ''
+      AND LENGTH(SUBSTRING_INDEX(p.seller_sku, '/', 1)) <= 13
+      GROUP BY TRIM(UPPER(SUBSTRING_INDEX(p.seller_sku, '/', 1)))
+      LIMIT ${batchSize} OFFSET ${offset}
+    `;
 
-    const chunkSize = 2000;
+      const products: { id: string; seller_sku: string }[] = await this.entityManager.query(selectSql, values);
 
-    for (let i = 0; i < products.length; i += chunkSize) {
-      const chunk = products.slice(i, i + chunkSize);
+      if (!products.length) break;
 
-      const placeholders = chunk.map(() => '(?,?,?)').join(',');
-
+      const placeholders = products.map(() => '(?,?,?)').join(',');
       const params: any[] = [];
 
-      chunk.forEach(p => {
+      products.forEach(p => {
         params.push(p.id, p.seller_sku, marketplaceId);
       });
 
@@ -288,11 +294,14 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       `,
         params
       );
+
+      totalInserted += products.length;
+      offset += batchSize;
     }
 
     return {
       success: true,
-      totalProducts: products.length
+      totalProcessed: totalInserted
     };
   }
 
