@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Delete, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MarketplaceFavoritesService } from 'src/app/services/mercadolibre/analitics/AnalitycsFavoritesService';
 import { UpdateMarketplaceStatusDto } from './dto/UpdateMarketplaceStatusDto';
 import { GetFavoritesQueryDto } from './dto/favorites/getFavorites.dto';
@@ -77,6 +77,38 @@ export class MarketplaceFavoritesController {
     @Body('productIds') productIds: string[]
   ) {
     return this.service.removeFavoritesBulk(marketplaceId, productIds);
+  }
+
+  @Post(':id/cleanup-skus')
+  @ApiOperation({
+    summary: 'Clean duplicated SKUs (keep only one per SKU)',
+    description: 'Receives a list of seller SKUs and removes duplicates, keeping only one record per SKU.'
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        skus: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['B0C33CHG99', 'B00004RDF0']
+        }
+      },
+      required: ['skus']
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Duplicates cleaned successfully',
+    schema: {
+      example: {
+        success: true,
+        cleaned: 10
+      }
+    }
+  })
+  async cleanDuplicatesBySkus(@Param('id', ParseIntPipe) marketplaceId: number, @Body('skus') skus: string[]) {
+    return this.service.cleanDuplicatesBySkus(marketplaceId, skus);
   }
 
   @Post('bulk')

@@ -50,6 +50,17 @@ export class MarketplaceFavoritesService {
 
     return this.repository.removeFavoritesBulk(marketplaceId, productIds);
   }
+
+  async cleanDuplicatesBySkus(marketplaceId: number, skus: string[]) {
+    await this.ensureMarketplaceIsActive(marketplaceId);
+
+    if (!skus || !skus.length) {
+      throw new BadRequestException('SKUs array is required');
+    }
+
+    return this.repository.cleanDuplicatesBySkus(marketplaceId, skus);
+  }
+
   async getFavorites(marketplaceId: number, filters?: FavoritesFiltersWithPagination) {
     return this.repository.getFavorites(marketplaceId, filters);
   }

@@ -4,6 +4,7 @@ export interface ISQLAnalyticsFavoritesRepository {
   getFavorites(marketplaceId: number, filters?: FavoritesFiltersWithPagination);
   removeFavorite(marketplaceId: number, productId: string);
   removeFavoritesBulk(marketplaceId: number, productIds: string[]): Promise<{ success: boolean; deleted: number }>;
+  cleanDuplicatesBySkus(marketplaceId: number, skus: string[]): Promise<{ success: boolean; cleaned: number }>;
   addFavorite(marketplaceId: number, productId: string, sellerSku: string);
   addFavoritesBulk(
     marketplaceId: number,

@@ -108,6 +108,32 @@ export class SQLAnalyticsFavoritesRepository implements ISQLAnalyticsFavoritesRe
     };
   }
 
+  async cleanDuplicatesBySkus(marketplaceId: number, skus: string[]): Promise<{ success: boolean; cleaned: number }> {
+    if (!skus.length) {
+      return { success: true, cleaned: 0 };
+    }
+
+    const placeholders = skus.map(() => '?').join(',');
+
+    const sql = `
+DELETE t1
+FROM marketplace_favorite_products t1
+JOIN marketplace_favorite_products t2
+  ON t1.seller_sku = t2.seller_sku
+  AND t1.marketplace_id = t2.marketplace_id
+  AND t1.product_id < t2.product_id
+WHERE t1.marketplace_id = ?
+  AND t1.seller_sku IN (${placeholders})
+`;
+
+    const result = await this.entityManager.query(sql, [marketplaceId, ...skus]);
+
+    return {
+      success: true,
+      cleaned: result.affectedRows || 0
+    };
+  }
+
   /* ================= Obtener Items de una carpeta de FAVORITES ================= */
 
   async getFavorites(
