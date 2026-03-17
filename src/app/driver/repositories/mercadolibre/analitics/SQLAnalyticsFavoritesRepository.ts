@@ -319,41 +319,53 @@ WHERE t1.marketplace_id = ?
   /* ================= analitica de productos en carpeta ================= */
   async getMarketplaceOverview(marketplaceId: number) {
     const sql = `
-    SELECT
-      COUNT(p.id)                                 AS totalProducts,
+  SELECT
+  COUNT(DISTINCT mf.seller_sku) AS totalProducts,
 
-      COALESCE(SUM(v.total_visits), 0)             AS totalVisits,
+  COALESCE(SUM(p_agg.total_visits), 0) AS totalVisits,
 
-      COALESCE(SUM(p.sold_quantity), 0)            AS totalOrders,
+  COALESCE(SUM(p_agg.total_orders), 0) AS totalOrders,
 
-      COALESCE(SUM(p.price * p.sold_quantity), 0)  AS totalRevenue,
+  COALESCE(SUM(p_agg.total_revenue), 0) AS totalRevenue,
 
-      COALESCE(AVG(p.price), 0)                    AS avgPrice,
+  COALESCE(AVG(p_agg.avg_price), 0) AS avgPrice,
 
-      COALESCE(
-        SUM(p.price * p.sold_quantity) /
-        NULLIF(SUM(p.sold_quantity), 0),
-      0)                                           AS avgTicket,
+  COALESCE(
+    SUM(p_agg.total_revenue) / NULLIF(SUM(p_agg.total_orders), 0),
+    0
+  ) AS avgTicket,
 
-      COUNT(DISTINCT p.brand)                      AS totalBrands,
+  COUNT(DISTINCT p_agg.brand) AS totalBrands,
 
-      COUNT(DISTINCT p.category_id)                AS totalCategories
+  COUNT(DISTINCT p_agg.category_id) AS totalCategories
 
-    FROM marketplace_favorite_products mf
+FROM marketplace_favorite_products mf
 
-    INNER JOIN mercadolibre_products p
-      ON p.id = mf.product_id
+INNER JOIN (
+  SELECT
+    p.seller_sku,
+    p.brand,
+    p.category_id,
 
-    LEFT JOIN (
-      SELECT
-        item_id,
-        SUM(total_visits) AS total_visits
-      FROM mercadolibre_item_visits
-      GROUP BY item_id
-    ) v
-      ON v.item_id = p.id
+    SUM(p.sold_quantity) AS total_orders,
+    SUM(p.price * p.sold_quantity) AS total_revenue,
+    AVG(p.price) AS avg_price,
 
-    WHERE mf.marketplace_id = ?
+    COALESCE(SUM(v.total_visits), 0) AS total_visits
+
+  FROM mercadolibre_products p
+
+  LEFT JOIN (
+    SELECT item_id, SUM(total_visits) AS total_visits
+    FROM mercadolibre_item_visits
+    GROUP BY item_id
+  ) v ON v.item_id = p.id
+
+  GROUP BY p.seller_sku, p.brand, p.category_id
+) p_agg
+  ON p_agg.seller_sku = mf.seller_sku
+
+WHERE mf.marketplace_id = ?
   `;
 
     const [result] = await this.entityManager.query(sql, [marketplaceId]);
