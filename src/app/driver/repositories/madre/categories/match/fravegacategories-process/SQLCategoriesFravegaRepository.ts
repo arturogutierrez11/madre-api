@@ -1,8 +1,8 @@
 import { InjectEntityManager } from '@nestjs/typeorm';
+import { ISQLCategoriesFravegaRepository } from 'src/core/adapters/repositories/madre/categories/match/fravegaCategoriesProcess/ISQLCategoriesFravegaRepository';
 import { EntityManager } from 'typeorm';
-import { ISLQTreeCategories } from 'src/core/adapters/repositories/madre/categories/match/fravegaCategoriesProcess/ISLQTreeCategories';
 
-export class SLQTreeCategories implements ISLQTreeCategories {
+export class SQLCategoriesFravegaRepository implements ISQLCategoriesFravegaRepository {
   constructor(
     @InjectEntityManager()
     private readonly productosMadreEntityManager: EntityManager

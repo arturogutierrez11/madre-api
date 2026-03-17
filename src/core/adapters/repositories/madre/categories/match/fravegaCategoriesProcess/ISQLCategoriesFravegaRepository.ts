@@ -1,4 +1,4 @@
-export interface ISLQTreeCategories {
+export interface ISQLCategoriesFravegaRepository {
   getCategoriesTree(): Promise<any[]>;
   getCategoryAttributes(categoryId: string): Promise<any[]>;
   findByMeliCategoryId(meliCategoryId: string);

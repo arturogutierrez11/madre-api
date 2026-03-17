@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+// Controllers
 import { CategoryMadreController } from 'src/app/controller/madre/categories/CategoryMadre.Controller';
-import { CategoryMatchController } from 'src/app/controller/madre/categories/match/CategoryMatch.Controller';
-import { SLQTreeCategories } from 'src/app/driver/repositories/madre/categories/match/fravegacategories-process/SLQTreeCategories';
-import { SQLCategoriesFravegaRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesFravegaRepository';
-import { SQLCategoriesMegatoneRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesMegatoneRepository';
-import { SQLCategoriesOncityRepository } from 'src/app/driver/repositories/madre/categories/match/SQLCategoriesOncityRepository';
-import { SQLCategoriesRepository } from 'src/app/driver/repositories/madre/categories/SQLCategoriesRepository';
+
+// Services
 import { CategoryMadreService } from 'src/app/services/madre/categories/CategoryMadreService';
-import { CategoryMatchService } from 'src/app/services/madre/categories/match/CategoryMatchService';
-import { TreeCategoriesServices } from 'src/app/services/madre/categories/match/fravegaCategoriesProcess/TreeCategoriesService';
+import { TreeCategoriesFravegaService } from 'src/app/services/madre/categories/match/fravegaCategoriesProcess/TreeCategoriesFravegaService';
+
+// Repositories
+import { SQLCategoriesRepository } from 'src/app/driver/repositories/madre/categories/SQLCategoriesRepository';
+import { SQLCategoriesFravegaRepository } from 'src/app/driver/repositories/madre/categories/match/fravegacategories-process/SQLCategoriesFravegaRepository';
+import { SQLCategoriesMegatoneRepository } from 'src/app/driver/repositories/madre/categories/match/megatonecategories-process/SQLCategoriesMegatoneRepository';
+import { CategoriesFravegaController } from 'src/app/controller/madre/categories/match/CategoriesFravega.Controller';
+import { CategoriesMegatoneController } from 'src/app/controller/madre/categories/match/CategoriesMegatone.Controller';
+import { CategoriesMegatoneService } from 'src/app/services/madre/categories/match/megatoneCategoriesProcess/TreeCategoriesMegatoneService';
 
 @Module({
   imports: [
@@ -25,31 +30,27 @@ import { TreeCategoriesServices } from 'src/app/services/madre/categories/match/
       synchronize: false
     })
   ],
-  controllers: [CategoryMatchController, CategoryMadreController],
-  providers: [
-    CategoryMatchService,
-    CategoryMadreService,
-    TreeCategoriesServices,
 
+  controllers: [CategoryMadreController, CategoriesFravegaController, CategoriesMegatoneController],
+
+  providers: [
+    // services
+    CategoryMadreService,
+    TreeCategoriesFravegaService,
+    CategoriesMegatoneService,
+
+    // repositories (tokens CORRECTOS)
     {
       provide: 'CategoriesMadreRepository',
       useClass: SQLCategoriesRepository
     },
     {
-      provide: 'CategoriesOncityRepository',
-      useClass: SQLCategoriesOncityRepository
-    },
-    {
-      provide: 'CategoriesMegatoneRepository',
-      useClass: SQLCategoriesMegatoneRepository
-    },
-    {
-      provide: 'CategoriesFravegaRepository',
+      provide: 'ISQLCategoriesFravegaRepository',
       useClass: SQLCategoriesFravegaRepository
     },
     {
-      provide: 'ISLQTreeCategories',
-      useClass: SLQTreeCategories
+      provide: 'ISQLCategoriesMegatoneRepository',
+      useClass: SQLCategoriesMegatoneRepository
     }
   ]
 })
