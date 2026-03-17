@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ISLQTreeCategories } from 'src/core/adapters/repositories/madre/categories/match/fravegaCategoriesProcess/ISLQTreeCategories';
+import { ISQLCategoriesFravegaRepository } from 'src/core/adapters/repositories/madre/categories/match/fravegaCategoriesProcess/ISQLCategoriesFravegaRepository';
 
 @Injectable()
-export class TreeCategoriesServices {
+export class TreeCategoriesFravegaService {
   constructor(
-    @Inject('ISLQTreeCategories')
-    private readonly fravegaCategoriesProcess: ISLQTreeCategories
+    @Inject('ISQLCategoriesFravegaRepository')
+    private readonly fravegaCategoriesProcess: ISQLCategoriesFravegaRepository
   ) {}
 
   async getFravegaCategoriesTree() {

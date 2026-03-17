@@ -4,7 +4,7 @@ import { CategoryMadreService } from 'src/app/services/madre/categories/Category
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { CategoryMadre } from 'src/core/entities/madre/categories/CategoryMadre';
 
-@ApiTags('categories')
+@ApiTags('Categories Madre')
 @Controller('categories')
 export class CategoryMadreController {
   constructor(private readonly categoryMadreService: CategoryMadreService) {}
