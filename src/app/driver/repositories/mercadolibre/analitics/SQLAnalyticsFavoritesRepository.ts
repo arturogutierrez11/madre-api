@@ -400,35 +400,42 @@ WHERE mf.marketplace_id = ?
   }
   async getMarketplaceCategoriesBreakdown(marketplaceId: number) {
     const sql = `
-    SELECT
-      c.id AS categoryId,
-      c.name AS categoryName,
-      c.level,
-      COUNT(*) AS totalProducts,
+   SELECT
+  c.id AS categoryId,
+  c.name AS categoryName,
+  c.level,
 
-      (
-        SELECT GROUP_CONCAT(parent.name ORDER BY parent.level SEPARATOR ' > ')
-        FROM mercadolibre_categories parent
-        WHERE FIND_IN_SET(
-          parent.id,
-          REPLACE(c.path, '.', ',')
-        )
-      ) AS fullPath
+  COUNT(DISTINCT mf.seller_sku) AS totalProducts,
 
-    FROM marketplace_favorite_products mf
+  (
+    SELECT GROUP_CONCAT(parent.name ORDER BY parent.level SEPARATOR ' > ')
+    FROM mercadolibre_categories parent
+    WHERE FIND_IN_SET(
+      parent.id,
+      REPLACE(c.path, '.', ',')
+    )
+  ) AS fullPath
 
-    INNER JOIN mercadolibre_products p
-      ON p.id = mf.product_id
+FROM marketplace_favorite_products mf
 
-    INNER JOIN mercadolibre_categories c
-      ON c.id = p.category_id
+INNER JOIN (
+  SELECT
+    p.seller_sku,
+    p.category_id
+  FROM mercadolibre_products p
+  GROUP BY p.seller_sku, p.category_id
+) p_agg
+  ON p_agg.seller_sku = mf.seller_sku
 
-    WHERE mf.marketplace_id = ?
-      AND p.category_id IS NOT NULL
+INNER JOIN mercadolibre_categories c
+  ON c.id = p_agg.category_id
 
-    GROUP BY c.id, c.name, c.level, c.path
+WHERE mf.marketplace_id = ?
+  AND p_agg.category_id IS NOT NULL
 
-    ORDER BY c.level ASC, totalProducts DESC
+GROUP BY c.id, c.name, c.level, c.path
+
+ORDER BY c.level ASC, totalProducts DESC
   `;
 
     return this.entityManager.query(sql, [marketplaceId]);
