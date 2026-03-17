@@ -514,7 +514,7 @@ ORDER BY c.level ASC, totalProducts DESC
 
     let where = `
     WHERE mf.marketplace_id = ?
-    AND p.category_id IS NOT NULL
+    AND p_agg.category_id IS NOT NULL
   `;
 
     if (params?.search) {
@@ -526,36 +526,49 @@ ORDER BY c.level ASC, totalProducts DESC
     const limit = Number(params?.limit ?? 20);
     const offset = (page - 1) * limit;
 
+    // 🔥 COUNT CORREGIDO
     const countSql = `
     SELECT COUNT(DISTINCT c.id) as total
     FROM marketplace_favorite_products mf
-    INNER JOIN mercadolibre_products p
-      ON p.id = mf.product_id
+    INNER JOIN (
+      SELECT
+        p.seller_sku,
+        p.category_id
+      FROM mercadolibre_products p
+      GROUP BY p.seller_sku, p.category_id
+    ) p_agg
+      ON p_agg.seller_sku = mf.seller_sku
     INNER JOIN mercadolibre_categories c
-      ON c.id = p.category_id
+      ON c.id = p_agg.category_id
     ${where}
   `;
 
     const [countResult] = await this.entityManager.query(countSql, values);
     const total = Number(countResult.total);
 
+    // 🔥 DATA CORREGIDA
     const sql = `
-   SELECT
-  c.id AS categoryId,
-  c.name AS categoryName,
-  c.level,
-  COUNT(*) AS totalProducts,
-  c.path
-FROM marketplace_favorite_products mf
-INNER JOIN mercadolibre_products p
-  ON p.id = mf.product_id
-INNER JOIN mercadolibre_categories c
-  ON c.id = p.category_id
-WHERE mf.marketplace_id = ?
-AND p.category_id IS NOT NULL
-GROUP BY c.id, c.name, c.level, c.path
-ORDER BY totalProducts DESC
-LIMIT ? OFFSET ?
+    SELECT
+      c.id AS categoryId,
+      c.name AS categoryName,
+      c.level,
+      COUNT(DISTINCT mf.seller_sku) AS totalProducts,
+      c.path
+    FROM marketplace_favorite_products mf
+    INNER JOIN (
+      SELECT
+        p.seller_sku,
+        p.category_id
+      FROM mercadolibre_products p
+      GROUP BY p.seller_sku, p.category_id
+    ) p_agg
+      ON p_agg.seller_sku = mf.seller_sku
+    INNER JOIN mercadolibre_categories c
+      ON c.id = p_agg.category_id
+    ${where}
+    GROUP BY c.id, c.name, c.level, c.path
+    ORDER BY totalProducts DESC
+    LIMIT ? OFFSET ?
   `;
 
     const data = await this.entityManager.query(sql, [...values, limit, offset]);
