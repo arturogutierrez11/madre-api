@@ -246,4 +246,19 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
 
     return this.findHistoryByStatus(item.id, status);
   }
+
+  async existsBySellerSku(marketplace: string, sellerSku: string): Promise<boolean> {
+    const rows = await this.entityManager.query(
+      `
+    SELECT 1
+    FROM product_sync_items
+    WHERE marketplace = ?
+      AND BINARY seller_sku = ?
+    LIMIT 1
+    `,
+      [marketplace, sellerSku]
+    );
+
+    return rows.length > 0;
+  }
 }
