@@ -39,4 +39,30 @@ export class SQLMegatoneBrandMatchRepository implements ISQLMegatoneBrandMatchRe
 
     return Boolean(result[0]?.existsMatch);
   }
+
+  async findByMeliBrand(meliBrand: string): Promise<{
+    id: number;
+    meli_brand: string;
+    megatone_brand_id: string;
+    megatone_brand_name: string;
+    confidence: number;
+    created_at: Date;
+  } | null> {
+    const sql = `
+    SELECT 
+      id,
+      meli_brand,
+      megatone_brand_id,
+      megatone_brand_name,
+      confidence,
+      created_at
+    FROM meli_megatone_match_brand
+    WHERE meli_brand = ?
+    LIMIT 1
+  `;
+
+    const result = await this.entityManager.query(sql, [meliBrand]);
+
+    return result.length ? result[0] : null;
+  }
 }

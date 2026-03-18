@@ -218,4 +218,14 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
 
     return rows[0].run_id;
   }
+
+  async incrementTotalJobs(runId: number, count: number): Promise<void> {
+    const query = `
+    UPDATE publication_runs
+    SET total_jobs = total_jobs + ?
+    WHERE id = ?
+  `;
+
+    await this.productosMadreEntityManager.query(query, [count, runId]);
+  }
 }
