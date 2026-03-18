@@ -18,6 +18,7 @@ import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/Anal
 import { PublicationRunsModule } from './module/madre/publisher/publication_Run/PublicationRuns.Module';
 import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs/PublicationJobs.Module';
 import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandMatch.Module';
+import { MegatoneBrandMatchModule } from './module/madre/brands/megatoneBrandMatch/MegatoneBrandMatch.Module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandM
     AnalyticsBrandsModule,
     MarketplaceFavoritesModule,
     BrandMatchModule,
+    MegatoneBrandMatchModule,
 
     // PUBLCIADOR:
     // modulo de la tabla de publication_run
