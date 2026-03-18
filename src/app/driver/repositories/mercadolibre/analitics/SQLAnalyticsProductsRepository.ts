@@ -16,6 +16,7 @@ type ProductsFilters = {
   excludeMarketplace?: string[];
   inMarketplace?: number;
   marketplaceStatus?: 'published' | 'not_published';
+  matchedMarketplace?: 'megatone' | 'fravega';
 };
 
 @Injectable()
@@ -190,6 +191,27 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       `);
 
       values.push(...params.excludeMarketplace);
+    }
+
+    /* ===== MATCHED MARKETPLACE (DINÁMICO) ===== */
+    if (params.matchedMarketplace) {
+      const tableMap = {
+        megatone: 'meli_megatone_match_brand',
+        fravega: 'meli_fravega_match_brand'
+      };
+
+      const table = tableMap[params.matchedMarketplace];
+
+      if (table) {
+        where.push(`
+      EXISTS (
+        SELECT 1
+        FROM ${table} mb
+        WHERE mb.meli_brand = p.brand
+        AND mb.confidence > 0.8
+      )
+    `);
+      }
     }
 
     /* ===== PRODUCT STATUS IN MELI===== */

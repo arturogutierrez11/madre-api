@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { ISQLMegatoneBrandMatchRepository } from 'src/core/adapters/repositories/madre/brands/match/megatoneBrandsMatch/ISQLMegatoneBrandMatchRepository';
 
 @Injectable()
@@ -14,7 +14,16 @@ export class SaveMegatoneBrandMatchService {
 
   async checkIfBrandExist(megatoneBrandId: string) {
     const exists = await this.repository.existsByMegatoneBrandId(megatoneBrandId);
-
     return { exists };
+  }
+
+  async findByMeliBrand(meliBrand: string) {
+    const brand = await this.repository.findByMeliBrand(meliBrand);
+
+    if (!brand) {
+      throw new NotFoundException(`No match found for meliBrand: ${meliBrand}`);
+    }
+
+    return brand;
   }
 }

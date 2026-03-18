@@ -10,6 +10,7 @@ export type AnalyticsProductsFilters = {
   excludeMarketplace?: string[];
   inMarketplace?: number;
   marketplaceStatus?: 'published' | 'not_published';
+  matchedMarketplace?: 'megatone' | 'fravega';
 };
 
 export interface IAnalyticsProductsRepository {

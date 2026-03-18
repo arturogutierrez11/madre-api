@@ -81,4 +81,12 @@ export class GetAnalyticsProductsDto {
   @IsOptional()
   @IsIn(['active', 'under_review', 'paused', 'closed'])
   status?: 'active' | 'under_review' | 'paused' | 'closed';
+
+  @ApiPropertyOptional({
+    description: 'Filtrar productos disponibles para un marketplace específico',
+    enum: ['megatone', 'fravega']
+  })
+  @IsOptional()
+  @IsIn(['megatone', 'fravega'])
+  matchedMarketplace?: 'megatone' | 'fravega';
 }
