@@ -214,12 +214,18 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       SELECT mp.*
       FROM mercadolibre_products mp
       INNER JOIN (
-        SELECT seller_sku, MIN(price) AS min_price
-        FROM mercadolibre_products
-        WHERE seller_sku IS NOT NULL AND seller_sku != ''
-        GROUP BY seller_sku
-      ) dedup ON mp.seller_sku = dedup.seller_sku AND mp.price = dedup.min_price
-      GROUP BY mp.seller_sku
+        SELECT MIN(mp_inner.id) AS id
+        FROM mercadolibre_products mp_inner
+        INNER JOIN (
+          SELECT seller_sku, MIN(price) AS min_price
+          FROM mercadolibre_products
+          WHERE seller_sku IS NOT NULL AND seller_sku != ''
+          GROUP BY seller_sku
+        ) best_price
+          ON mp_inner.seller_sku = best_price.seller_sku
+         AND mp_inner.price = best_price.min_price
+        GROUP BY mp_inner.seller_sku
+      ) chosen ON mp.id = chosen.id
       ORDER BY mp.seller_sku
       LIMIT ? OFFSET ?
       `,
