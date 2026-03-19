@@ -234,6 +234,14 @@ export class SQLProductMadreRepository implements IProductsRepository {
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
       .join(' ');
 
+    const meliStatusCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.meliStatus}'`)
+      .join(' ');
+
+    const amzStatusCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amzStatus != null ? `'${p.amzStatus}'` : 'NULL'}`)
+      .join(' ');
+
     const sql = `
     UPDATE productos_madre
     SET
@@ -241,6 +249,8 @@ export class SQLProductMadreRepository implements IProductsRepository {
       stock = CASE sku ${stockCases} ELSE stock END,
       estado = CASE sku ${estadoCases} ELSE estado END,
       tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
+      meli_status = CASE sku ${meliStatusCases} ELSE meli_status END,
+      amz_status = CASE sku ${amzStatusCases} ELSE amz_status END,
       updated_at = CASE
         WHEN
           precio <> CASE sku ${precioCases} ELSE precio END
@@ -250,6 +260,16 @@ export class SQLProductMadreRepository implements IProductsRepository {
             tiempo_envio <> CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END
             OR (tiempo_envio IS NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NOT NULL)
             OR (tiempo_envio IS NOT NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NULL)
+          )
+          OR (
+            meli_status <> CASE sku ${meliStatusCases} ELSE meli_status END
+            OR (meli_status IS NULL AND CASE sku ${meliStatusCases} ELSE meli_status END IS NOT NULL)
+            OR (meli_status IS NOT NULL AND CASE sku ${meliStatusCases} ELSE meli_status END IS NULL)
+          )
+          OR (
+            amz_status <> CASE sku ${amzStatusCases} ELSE amz_status END
+            OR (amz_status IS NULL AND CASE sku ${amzStatusCases} ELSE amz_status END IS NOT NULL)
+            OR (amz_status IS NOT NULL AND CASE sku ${amzStatusCases} ELSE amz_status END IS NULL)
           )
         THEN NOW()
         ELSE updated_at

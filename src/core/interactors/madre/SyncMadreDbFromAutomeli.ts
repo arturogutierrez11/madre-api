@@ -171,7 +171,9 @@ export class SyncMadreDbFromAutomeli {
       price: product.meliSalePrice,
       stock: product.stockQuantity,
       status: this.mapStatus(product),
-      shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime)
+      shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime),
+      meliStatus: product.meliStatus,
+      amzStatus: product.amzStatus
     }));
 
     return await this.productRepository.bulkUpdateFromAutomeli(updateData);

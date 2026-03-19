@@ -8,6 +8,8 @@ export interface AutomeliBulkUpdateData {
   stock: number;
   status: 'active' | 'inactive';
   shippingTime: number | null;
+  meliStatus: string;
+  amzStatus: string | null;
 }
 
 export interface MeliProductImportData {
