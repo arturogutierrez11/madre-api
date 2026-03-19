@@ -60,4 +60,8 @@ export class ProductSyncUpdateService {
 
     await this.productSyncRepository.bulkUpsert([updatedItem]);
   }
+  async existsBySellerSku(marketplace: string, sellerSku: string): Promise<boolean> {
+    const item = await this.productSyncRepository.findItemBySellerSku(marketplace, sellerSku);
+    return !!item;
+  }
 }

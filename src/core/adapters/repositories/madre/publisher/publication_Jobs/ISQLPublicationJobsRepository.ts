@@ -10,4 +10,5 @@ export interface ISQLPublicationJobsRepository {
   retryFailedJobs(runId: number): Promise<number>;
   incrementRunCounter(runId: number, field: 'success_jobs' | 'failed_jobs'): Promise<void>;
   findRunIdByJobId(jobId: number): Promise<number | null>;
+  incrementTotalJobs(runId: number, count: number): Promise<void>;
 }

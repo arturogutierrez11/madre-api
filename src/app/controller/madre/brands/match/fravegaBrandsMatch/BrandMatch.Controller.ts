@@ -89,4 +89,22 @@ export class BrandMatchController {
   async exists(@Param('id') id: string) {
     return this.service.CheckIfBrandExist(id);
   }
+
+  @ApiOperation({
+    summary: 'Get match by MercadoLibre brand'
+  })
+  @ApiParam({
+    name: 'meliBrand',
+    description: 'MercadoLibre brand name',
+    example: 'RCA'
+  })
+  @Get('brands/fravega/meli/:meliBrand')
+  async findByMeliBrand(@Param('meliBrand') meliBrand: string) {
+    const result = await this.service.findByMeliBrand(meliBrand);
+
+    return {
+      status: 'ok',
+      data: result
+    };
+  }
 }

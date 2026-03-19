@@ -236,4 +236,30 @@ Estados incluidos:
   async getStatusSummary(@Param('marketplace') marketplace: string) {
     return this.productSyncRepository.countSyncItemsByStatus(marketplace);
   }
+
+  @ApiOperation({
+    summary: 'Check if a product exists by marketplace and sellerSku'
+  })
+  @ApiQuery({
+    name: 'marketplace',
+    example: 'megatone',
+    required: true,
+    description: 'Marketplace name'
+  })
+  @ApiQuery({
+    name: 'sellerSku',
+    example: 'B0CV2HGZPZ',
+    required: true,
+    description: 'Seller SKU'
+  })
+  @Get('items/exists')
+  async existsBySellerSku(@Query('marketplace') marketplace: string, @Query('sellerSku') sellerSku: string) {
+    if (!marketplace || !sellerSku) {
+      throw new BadRequestException('marketplace and sellerSku are required');
+    }
+
+    const exists = await this.productSyncUpdateService.existsBySellerSku(marketplace, sellerSku);
+
+    return { exists };
+  }
 }

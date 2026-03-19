@@ -53,4 +53,22 @@ export class MegatoneBrandMatchController {
   async exists(@Param('id') id: string) {
     return this.service.checkIfBrandExist(id);
   }
+
+  @ApiOperation({
+    summary: 'Get match by MercadoLibre brand'
+  })
+  @ApiParam({
+    name: 'meliBrand',
+    description: 'MercadoLibre brand name',
+    example: 'RCA'
+  })
+  @Get('brands/megatone/meli/:meliBrand')
+  async findByMeliBrand(@Param('meliBrand') meliBrand: string) {
+    const result = await this.service.findByMeliBrand(meliBrand);
+
+    return {
+      status: 'ok',
+      data: result
+    };
+  }
 }

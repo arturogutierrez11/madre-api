@@ -27,6 +27,7 @@ export class PublicationJobsServices {
     }
 
     const count = await this.repository.createMany(data.run_id, data.jobs);
+    await this.repository.incrementTotalJobs(data.run_id, count);
 
     return {
       status: 'ok',

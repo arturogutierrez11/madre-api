@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class SaveBrandMatchService {
@@ -16,5 +16,15 @@ export class SaveBrandMatchService {
     return {
       exists
     };
+  }
+
+  async findByMeliBrand(meliBrand: string) {
+    const brand = await this.repository.findByMeliBrand(meliBrand);
+
+    if (!brand) {
+      throw new NotFoundException(`No match found for meliBrand: ${meliBrand}`);
+    }
+
+    return brand;
   }
 }
