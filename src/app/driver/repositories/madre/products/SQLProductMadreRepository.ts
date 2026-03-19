@@ -153,7 +153,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
     if (products.length === 0) return 0;
 
     const placeholders = products
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .join(',');
 
     const values: any[] = [];
@@ -166,6 +166,9 @@ export class SQLProductMadreRepository implements IProductsRepository {
         }
       }
 
+      const attributesJson =
+        p.attributes != null ? JSON.stringify(p.attributes.raw) : null;
+
       values.push(
         p.sku,
         p.title,
@@ -175,7 +178,8 @@ export class SQLProductMadreRepository implements IProductsRepository {
         p.stock,
         p.status,
         ...imagesByPosition,
-        p.categoryMLA ?? null
+        p.categoryMLA ?? null,
+        attributesJson
       );
     }
 
@@ -184,7 +188,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
         sku, titulo, descripcion, categoria, precio, stock, estado,
         imagen_1, imagen_2, imagen_3, imagen_4, imagen_5,
         imagen_6, imagen_7, imagen_8, imagen_9, imagen_10,
-        categoria_mla
+        categoria_mla, atributos
       )
       VALUES ${placeholders}
       ON DUPLICATE KEY UPDATE
@@ -205,6 +209,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
         imagen_9 = VALUES(imagen_9),
         imagen_10 = VALUES(imagen_10),
         categoria_mla = VALUES(categoria_mla),
+        atributos = VALUES(atributos),
         updated_at = NOW()
     `;
 

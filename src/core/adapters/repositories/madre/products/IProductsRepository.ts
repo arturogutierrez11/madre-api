@@ -1,6 +1,6 @@
 import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
-import { ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
+import { ProductAttributes, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
 
 export interface AutomeliBulkUpdateData {
   sku: string;
@@ -20,6 +20,7 @@ export interface MeliProductImportData {
   status: 'active' | 'inactive';
   images: { position: number; url: string }[];
   categoryMLA?: string | null;
+  attributes?: ProductAttributes | null;
 }
 
 export interface IProductsRepository {

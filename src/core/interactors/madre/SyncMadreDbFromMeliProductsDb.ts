@@ -168,7 +168,12 @@ export class SyncMadreDbFromMeliProductsDb {
       stock: mlProduct.stock,
       status: 'inactive',
       images,
-      categoryMLA: mlProduct.categoryId ?? null
+      categoryMLA: mlProduct.categoryId ?? null,
+      attributes: {
+        brand: mlProduct.brand ?? undefined,
+        color: undefined,
+        raw: { marca: mlProduct.brand ?? null, color: null }
+      }
     };
   }
 
