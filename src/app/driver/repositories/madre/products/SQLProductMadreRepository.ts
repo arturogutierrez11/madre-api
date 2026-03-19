@@ -5,6 +5,7 @@ import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import {
   AutomeliBulkUpdateData,
+  MeliProductImportData,
   IProductsRepository
 } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
@@ -56,6 +57,9 @@ export class SQLProductMadreRepository implements IProductsRepository {
       videoUrl: row.video_1 ?? undefined,
       attributes: this.parseAttributes(row.atributos),
       shippingTime: row.tiempo_envio ? Number(row.tiempo_envio) : undefined,
+      meliStatus: row.meli_status ?? null,
+      amzStatus: row.amz_status ?? null,
+      categoryMLA: row.categoria_mla ?? null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
@@ -130,6 +134,82 @@ export class SQLProductMadreRepository implements IProductsRepository {
 
   private escapeSku(sku: string): string {
     return sku.replace(/'/g, "''");
+  }
+
+  async bulkUpsertFromMeliProducts(products: MeliProductImportData[]): Promise<number> {
+    if (products.length === 0) return 0;
+
+    let totalAffected = 0;
+
+    for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
+      totalAffected += await this.executeBulkUpsertFromMeli(batch);
+    }
+
+    return totalAffected;
+  }
+
+  private async executeBulkUpsertFromMeli(products: MeliProductImportData[]): Promise<number> {
+    if (products.length === 0) return 0;
+
+    const placeholders = products
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .join(',');
+
+    const values: any[] = [];
+
+    for (const p of products) {
+      const imagesByPosition: (string | null)[] = new Array(10).fill(null);
+      for (const img of p.images) {
+        if (img.position >= 1 && img.position <= 10) {
+          imagesByPosition[img.position - 1] = img.url;
+        }
+      }
+
+      values.push(
+        p.sku,
+        p.title,
+        p.description,
+        p.categoryPath,
+        p.price,
+        p.stock,
+        p.status,
+        ...imagesByPosition,
+        p.categoryMLA ?? null
+      );
+    }
+
+    const sql = `
+      INSERT INTO productos_madre (
+        sku, titulo, descripcion, categoria, precio, stock, estado,
+        imagen_1, imagen_2, imagen_3, imagen_4, imagen_5,
+        imagen_6, imagen_7, imagen_8, imagen_9, imagen_10,
+        categoria_mla
+      )
+      VALUES ${placeholders}
+      ON DUPLICATE KEY UPDATE
+        titulo = VALUES(titulo),
+        descripcion = VALUES(descripcion),
+        categoria = VALUES(categoria),
+        precio = VALUES(precio),
+        stock = VALUES(stock),
+        estado = VALUES(estado),
+        imagen_1 = VALUES(imagen_1),
+        imagen_2 = VALUES(imagen_2),
+        imagen_3 = VALUES(imagen_3),
+        imagen_4 = VALUES(imagen_4),
+        imagen_5 = VALUES(imagen_5),
+        imagen_6 = VALUES(imagen_6),
+        imagen_7 = VALUES(imagen_7),
+        imagen_8 = VALUES(imagen_8),
+        imagen_9 = VALUES(imagen_9),
+        imagen_10 = VALUES(imagen_10),
+        categoria_mla = VALUES(categoria_mla),
+        updated_at = NOW()
+    `;
+
+    const result = await this.productosMadreEntityManager.query(sql, values);
+    return result.affectedRows || 0;
   }
 
   private async executeBulkUpdate(products: AutomeliBulkUpdateData[]): Promise<number> {

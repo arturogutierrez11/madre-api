@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { ISQLMercadoLibreProductsRepository } from 'src/core/adapters/repositories/mercadolibre/itemsDetails/ISQLMercadoLibreProductsRepository';
+import {
+  DeduplicatedBySkuResult,
+  ISQLMercadoLibreProductsRepository
+} from 'src/core/adapters/repositories/mercadolibre/itemsDetails/ISQLMercadoLibreProductsRepository';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 
@@ -191,6 +194,76 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       .toISOString()
       .slice(0, 19) // YYYY-MM-DDTHH:mm:ss
       .replace('T', ' ');
+  }
+
+  async findDeduplicatedBySku(params: {
+    limit: number;
+    offset: number;
+  }): Promise<DeduplicatedBySkuResult> {
+    const { limit, offset } = params;
+
+    const countResult = await this.entityManager.query(`
+      SELECT COUNT(DISTINCT seller_sku) AS total
+      FROM mercadolibre_products
+      WHERE seller_sku IS NOT NULL AND seller_sku != ''
+    `);
+    const total = Number(countResult[0].total);
+
+    const rows = await this.entityManager.query(
+      `
+      SELECT mp.*
+      FROM mercadolibre_products mp
+      INNER JOIN (
+        SELECT seller_sku, MIN(price) AS min_price
+        FROM mercadolibre_products
+        WHERE seller_sku IS NOT NULL AND seller_sku != ''
+        GROUP BY seller_sku
+      ) dedup ON mp.seller_sku = dedup.seller_sku AND mp.price = dedup.min_price
+      GROUP BY mp.seller_sku
+      ORDER BY mp.seller_sku
+      LIMIT ? OFFSET ?
+      `,
+      [limit, offset]
+    );
+
+    const items: MercadoLibreProduct[] = rows.map((row: any) => this.mapRowToProduct(row));
+
+    return {
+      items,
+      total,
+      hasMore: offset + limit < total
+    };
+  }
+
+  private mapRowToProduct(row: any): MercadoLibreProduct {
+    let pictures: string[] = [];
+    try {
+      pictures = typeof row.pictures === 'string' ? JSON.parse(row.pictures) : (row.pictures ?? []);
+    } catch {
+      pictures = [];
+    }
+
+    return {
+      id: row.id,
+      categoryId: row.category_id ?? null,
+      title: row.title ?? '',
+      price: Number(row.price ?? 0),
+      currency: row.currency ?? '',
+      stock: Number(row.stock ?? 0),
+      soldQuantity: Number(row.sold_quantity ?? 0),
+      status: row.status ?? '',
+      condition: row.condition ?? '',
+      permalink: row.permalink ?? '',
+      thumbnail: row.thumbnail ?? '',
+      pictures,
+      sellerSku: row.seller_sku ?? undefined,
+      brand: row.brand ?? undefined,
+      warranty: row.warranty ?? undefined,
+      freeShipping: row.free_shipping === 1 || row.free_shipping === true,
+      health: row.health != null ? Number(row.health) : undefined,
+      lastUpdated: row.last_updated ?? undefined,
+      description: row.description ?? ''
+    };
   }
 
   async updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number> {

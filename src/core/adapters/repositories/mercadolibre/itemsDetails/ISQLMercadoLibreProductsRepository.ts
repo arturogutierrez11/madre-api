@@ -1,6 +1,12 @@
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
 import { PaginatedResult } from 'src/core/entities/mercadolibre/itemsId/PaginatedResult';
 
+export interface DeduplicatedBySkuResult {
+  items: MercadoLibreProduct[];
+  total: number;
+  hasMore: boolean;
+}
+
 export interface ISQLMercadoLibreProductsRepository {
   upsertBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
 
@@ -10,4 +16,9 @@ export interface ISQLMercadoLibreProductsRepository {
   ): Promise<PaginatedResult<any>>;
   updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
   findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]>;
+
+  findDeduplicatedBySku(params: {
+    limit: number;
+    offset: number;
+  }): Promise<DeduplicatedBySkuResult>;
 }

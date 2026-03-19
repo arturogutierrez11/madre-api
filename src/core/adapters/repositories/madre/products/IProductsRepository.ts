@@ -10,6 +10,18 @@ export interface AutomeliBulkUpdateData {
   shippingTime: number | null;
 }
 
+export interface MeliProductImportData {
+  sku: string;
+  title: string;
+  description: string;
+  categoryPath: string;
+  price: number;
+  stock: number;
+  status: 'active' | 'inactive';
+  images: { position: number; url: string }[];
+  categoryMLA?: string | null;
+}
+
 export interface IProductsRepository {
   findAll(
     pagination: PaginationParams,
@@ -24,4 +36,11 @@ export interface IProductsRepository {
    * @returns Number of affected rows
    */
   bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number>;
+
+  /**
+   * Bulk upsert products imported from mercadolibre_products.
+   * Uses INSERT ... ON DUPLICATE KEY UPDATE keyed on `sku`.
+   * @returns Number of affected rows
+   */
+  bulkUpsertFromMeliProducts(products: MeliProductImportData[]): Promise<number>;
 }
