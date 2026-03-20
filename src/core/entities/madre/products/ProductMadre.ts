@@ -19,9 +19,10 @@ export interface ProductMadre {
 
   shippingTime?: number;
 
-  meliStatus?: string | null;
-  amzStatus?: string | null;
   categoryMLA?: string | null;
+  categoryId?: string;
+  meliStatus?: string;
+  amzStatus?: string;
 
   createdAt: Date;
   updatedAt: Date;

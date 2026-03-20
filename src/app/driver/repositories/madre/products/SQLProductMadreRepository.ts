@@ -60,6 +60,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
       meliStatus: row.meli_status ?? null,
       amzStatus: row.amz_status ?? null,
       categoryMLA: row.categoria_mla ?? null,
+      categoryId: row.categoria_mla,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
