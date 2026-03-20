@@ -56,6 +56,9 @@ export class SQLProductMadreRepository implements IProductsRepository {
       videoUrl: row.video_1 ?? undefined,
       attributes: this.parseAttributes(row.atributos),
       shippingTime: row.tiempo_envio ? Number(row.tiempo_envio) : undefined,
+      categoryId: row.categoria_mla,
+      meliStatus: row.meli_status,
+      amzStatus: row.amz_status,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
