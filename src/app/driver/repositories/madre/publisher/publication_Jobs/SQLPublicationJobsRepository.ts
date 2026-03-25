@@ -122,7 +122,10 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
       SUM(status = 'pending') AS pending,
       SUM(status = 'processing') AS processing,
       SUM(status = 'success') AS success,
-      SUM(status = 'failed') AS failed
+      SUM(status = 'failed') AS failed,
+      SUM(status = 'skipped') AS skipped,
+      SUM(status = 'cancelled') AS cancelled,
+      SUM(status = 'retry') AS retry
     FROM publication_jobs
     WHERE run_id = ?
     GROUP BY run_id
@@ -137,22 +140,43 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
         pending: 0,
         processing: 0,
         success: 0,
-        failed: 0
+        failed: 0,
+        skipped: 0,
+        cancelled: 0,
+        retry: 0
       };
     }
 
     return rows[0];
   }
 
-  async getJobsByRun(runId: number, limit: number, offset: number, status?: string): Promise<any[]> {
+  async getJobsByRun(
+    runId: number,
+    limit: number,
+    offset: number,
+    status?: string
+  ): Promise<{
+    items: any[];
+    total: number;
+    limit: number;
+    offset: number;
+    hasNext: boolean;
+    nextOffset: number | null;
+  }> {
     let query = `
     SELECT
       id,
+      run_id,
       sku,
       marketplace,
       status,
       attempts,
+      result,
+      error_message,
+      request_payload,
+      response_payload,
       marketplace_item_id,
+      locked_at,
       created_at,
       updated_at
     FROM publication_jobs
@@ -160,10 +184,18 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
   `;
 
     const params: any[] = [runId];
+    let countQuery = `
+    SELECT COUNT(*) AS total
+    FROM publication_jobs
+    WHERE run_id = ?
+  `;
+    const countParams: any[] = [runId];
 
     if (status) {
       query += ` AND status = ?`;
       params.push(status);
+      countQuery += ` AND status = ?`;
+      countParams.push(status);
     }
 
     query += `
@@ -174,9 +206,27 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
 
     params.push(limit, offset);
 
-    const rows: any[] = await this.productosMadreEntityManager.query(query, params);
+    const [rows, totalRows]: [any[], any[]] = await Promise.all([
+      this.productosMadreEntityManager.query(query, params),
+      this.productosMadreEntityManager.query(countQuery, countParams)
+    ]);
 
-    return rows;
+    const total = Number(totalRows[0]?.total ?? 0);
+
+    return {
+      items: rows.map(row => ({
+        ...row,
+        attempts: Number(row.attempts ?? 0),
+        result: this.parseJsonField(row.result),
+        request_payload: this.parseJsonField(row.request_payload),
+        response_payload: this.parseJsonField(row.response_payload)
+      })),
+      total,
+      limit,
+      offset,
+      hasNext: offset + limit < total,
+      nextOffset: offset + limit < total ? offset + limit : null
+    };
   }
 
   async retryFailedJobs(runId: number): Promise<number> {
@@ -227,5 +277,17 @@ export class SQLPublicationJobsRepository implements ISQLPublicationJobsReposito
   `;
 
     await this.productosMadreEntityManager.query(query, [count, runId]);
+  }
+
+  private parseJsonField(value: unknown): unknown {
+    if (typeof value !== 'string') {
+      return value ?? null;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   }
 }

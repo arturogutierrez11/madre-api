@@ -37,13 +37,46 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
 
   async findById(id: number): Promise<PublicationRun | null> {
     const query = `
-    SELECT *
+    SELECT
+      pr.id,
+      pr.status,
+      pr.marketplaces,
+      pr.total_jobs,
+      pr.success_jobs,
+      pr.failed_jobs,
+      pr.created_at,
+      pr.started_at,
+      pr.finished_at,
+      pr.metadata,
+      COALESCE(stats.pending_jobs, 0) AS pending_jobs,
+      COALESCE(stats.processing_jobs, 0) AS processing_jobs,
+      COALESCE(stats.success_jobs, 0) AS actual_success_jobs,
+      COALESCE(stats.failed_jobs, 0) AS actual_failed_jobs,
+      COALESCE(stats.skipped_jobs, 0) AS skipped_jobs,
+      COALESCE(stats.cancelled_jobs, 0) AS cancelled_jobs,
+      COALESCE(stats.retry_jobs, 0) AS retry_jobs
     FROM publication_runs
-    WHERE id = ?
+    pr
+    LEFT JOIN (
+      SELECT
+        run_id,
+        COUNT(*) AS total_jobs,
+        SUM(status = 'pending') AS pending_jobs,
+        SUM(status = 'processing') AS processing_jobs,
+        SUM(status = 'success') AS success_jobs,
+        SUM(status = 'failed') AS failed_jobs,
+        SUM(status = 'skipped') AS skipped_jobs,
+        SUM(status = 'cancelled') AS cancelled_jobs,
+        SUM(status = 'retry') AS retry_jobs
+      FROM publication_jobs
+      WHERE run_id = ?
+      GROUP BY run_id
+    ) stats ON stats.run_id = pr.id
+    WHERE pr.id = ?
     LIMIT 1
   `;
 
-    const rows: any[] = await this.productosMadreEntityManager.query(query, [id]);
+    const rows: any[] = await this.productosMadreEntityManager.query(query, [id, id]);
 
     if (!rows.length) return null;
 
@@ -61,6 +94,15 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
 
     return {
       ...row,
+      total_jobs: Number(row.total_jobs ?? 0),
+      pending_jobs: Number(row.pending_jobs ?? 0),
+      processing_jobs: Number(row.processing_jobs ?? 0),
+      success_jobs: Number(row.actual_success_jobs ?? row.success_jobs ?? 0),
+      failed_jobs: Number(row.actual_failed_jobs ?? row.failed_jobs ?? 0),
+      skipped_jobs: Number(row.skipped_jobs ?? 0),
+      cancelled_jobs: Number(row.cancelled_jobs ?? 0),
+      retry_jobs: Number(row.retry_jobs ?? 0),
+      metadata: row.metadata ?? null,
       marketplaces
     };
   }
