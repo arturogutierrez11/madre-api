@@ -6,7 +6,19 @@ export interface ISQLPublicationJobsRepository {
   updateJob(id: number, data: UpdatePublicationJobDTO): Promise<void>;
   claimJobs(limit: number): Promise<any[]>;
   getRunProgress(runId: number): Promise<any>;
-  getJobsByRun(runId: number, limit: number, offset: number, status?: string): Promise<any[]>;
+  getJobsByRun(
+    runId: number,
+    limit: number,
+    offset: number,
+    status?: string
+  ): Promise<{
+    items: any[];
+    total: number;
+    limit: number;
+    offset: number;
+    hasNext: boolean;
+    nextOffset: number | null;
+  }>;
   retryFailedJobs(runId: number): Promise<number>;
   incrementRunCounter(runId: number, field: 'success_jobs' | 'failed_jobs'): Promise<void>;
   findRunIdByJobId(jobId: number): Promise<number | null>;
