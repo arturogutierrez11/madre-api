@@ -35,6 +35,22 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
     return run!;
   }
 
+  async findAll(): Promise<any[]> {
+    const query = `
+    SELECT *
+    FROM publication_runs
+    ORDER BY created_at DESC, id DESC
+  `;
+
+    const rows: any[] = await this.productosMadreEntityManager.query(query);
+
+    return rows.map(row => ({
+      ...row,
+      marketplaces: this.parseJsonOrCsv(row.marketplaces),
+      metadata: this.parseJsonOrNull(row.metadata)
+    }));
+  }
+
   async findById(id: number): Promise<PublicationRun | null> {
     const query = `
     SELECT
@@ -82,16 +98,6 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
 
     const row = rows[0];
 
-    let marketplaces = row.marketplaces;
-
-    if (typeof marketplaces === 'string') {
-      try {
-        marketplaces = JSON.parse(marketplaces);
-      } catch {
-        marketplaces = marketplaces.split(',');
-      }
-    }
-
     return {
       ...row,
       total_jobs: Number(row.total_jobs ?? 0),
@@ -102,8 +108,8 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
       skipped_jobs: Number(row.skipped_jobs ?? 0),
       cancelled_jobs: Number(row.cancelled_jobs ?? 0),
       retry_jobs: Number(row.retry_jobs ?? 0),
-      metadata: row.metadata ?? null,
-      marketplaces
+      metadata: this.parseJsonOrNull(row.metadata),
+      marketplaces: this.parseJsonOrCsv(row.marketplaces)
     };
   }
 
@@ -171,5 +177,33 @@ export class SQLPublicationRunRepository implements IPublicationRunRepository {
   `;
 
     await this.productosMadreEntityManager.query(query, [status, runId]);
+  }
+
+  private parseJsonOrCsv(value: unknown): unknown {
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value.split(',');
+    }
+  }
+
+  private parseJsonOrNull(value: unknown): unknown {
+    if (value == null || value === '') {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   }
 }
