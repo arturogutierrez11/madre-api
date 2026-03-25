@@ -9,7 +9,8 @@ import {
   Post,
   Put,
   BadRequestException,
-  Query
+  Query,
+  NotFoundException
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 
@@ -27,6 +28,30 @@ export class MarketplaceProductsBulkController {
     private readonly productSyncRepository: IProductSyncRepository,
     private readonly productSyncUpdateService: ProductSyncUpdateService
   ) {}
+
+  private buildMarketplaceSnapshot(rows: any[]) {
+    const sellerSku = rows[0]?.seller_sku ?? null;
+    const items = rows.map(row => ({
+      marketplace: row.marketplace,
+      marketplaceSku: row.marketplace_sku,
+      externalId: row.external_id,
+      price: Number(row.price),
+      stock: Number(row.stock),
+      status: row.status,
+      isActive: Boolean(row.is_active),
+      lastSeenAt: row.last_seen_at,
+      updatedAt: row.updated_at
+    }));
+
+    return {
+      sellerSku,
+      marketplaces: items.map(item => item.marketplace),
+      priceByMarketplace: Object.fromEntries(items.map(item => [item.marketplace, item.price])),
+      stockByMarketplace: Object.fromEntries(items.map(item => [item.marketplace, item.stock])),
+      statusByMarketplace: Object.fromEntries(items.map(item => [item.marketplace, item.status])),
+      items
+    };
+  }
 
   /* =====================================================
      BULK UPSERT (CRON / FULL SYNC)
@@ -82,6 +107,124 @@ export class MarketplaceProductsBulkController {
     }));
 
     await this.productSyncRepository.bulkUpsert(items);
+  }
+
+  @Get('items/:sellerSku/marketplaces')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Ver un SKU en todos los marketplaces',
+    description:
+      'Devuelve todos los marketplaces donde existe el sellerSku junto con precio, stock y estado actual.'
+  })
+  @ApiParam({
+    name: 'sellerSku',
+    description: 'SKU del vendedor',
+    example: 'B0CW2XFT87'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Snapshot del SKU por marketplace',
+    schema: {
+      example: {
+        sellerSku: 'B0CW2XFT87',
+        marketplaces: ['fravega', 'megatone', 'oncity'],
+        priceByMarketplace: {
+          fravega: 12000,
+          megatone: 13000,
+          oncity: 15000
+        },
+        stockByMarketplace: {
+          fravega: 2,
+          megatone: 1,
+          oncity: 0
+        },
+        statusByMarketplace: {
+          fravega: 'ACTIVE',
+          megatone: 'PAUSED',
+          oncity: 'PAUSED'
+        },
+        items: [
+          {
+            marketplace: 'oncity',
+            marketplaceSku: '11',
+            externalId: '11',
+            price: 0,
+            stock: 0,
+            status: 'PAUSED',
+            isActive: true,
+            lastSeenAt: '2026-02-05T12:46:17.000Z',
+            updatedAt: '2026-02-05T12:46:17.000Z'
+          }
+        ]
+      }
+    }
+  })
+  async getMarketplaceSnapshotBySellerSku(@Param('sellerSku') sellerSku: string) {
+    if (!sellerSku) {
+      throw new BadRequestException('sellerSku es obligatorio');
+    }
+
+    const rows = await this.productSyncRepository.findMarketplaceSnapshotBySellerSku(sellerSku);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(`No se encontraron marketplaces para sellerSku ${sellerSku}`);
+    }
+
+    return this.buildMarketplaceSnapshot(rows);
+  }
+
+  @Get('items/marketplaces')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Listar todos los SKUs con snapshot por marketplace',
+    description:
+      'Devuelve SKUs paginados y, para cada uno, el detalle por marketplace con precio, stock y estado.'
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Cantidad de SKUs a devolver por página'
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    example: 0,
+    description: 'Offset de SKUs para paginación'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Listado paginado de snapshots por sellerSku'
+  })
+  async listMarketplaceSnapshots(@Query('limit') limit = '10', @Query('offset') offset = '0') {
+    const parsedLimit = Math.min(Number(limit) || 10, 100);
+    const parsedOffset = Number(offset) || 0;
+
+    const [rows, total] = await Promise.all([
+      this.productSyncRepository.listMarketplaceSnapshotsBySellerSku(parsedLimit, parsedOffset),
+      this.productSyncRepository.countDistinctSellerSkus()
+    ]);
+
+    const grouped = new Map<string, any[]>();
+
+    for (const row of rows) {
+      const key = row.seller_sku;
+      const current = grouped.get(key) ?? [];
+      current.push(row);
+      grouped.set(key, current);
+    }
+
+    const items = Array.from(grouped.values()).map(group => this.buildMarketplaceSnapshot(group));
+
+    return {
+      items,
+      limit: parsedLimit,
+      offset: parsedOffset,
+      count: items.length,
+      total,
+      hasNext: parsedOffset + parsedLimit < total,
+      nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
+    };
   }
 
   /* =====================================================
