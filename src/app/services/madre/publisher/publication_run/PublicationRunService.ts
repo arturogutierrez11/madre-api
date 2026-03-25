@@ -28,6 +28,15 @@ export class PublicationRunService {
     }
   }
 
+  async listRuns() {
+    try {
+      return await this.repository.findAll();
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Error listing runs');
+    }
+  }
+
   async cancelRun(runId: number) {
     const jobsCancelled = await this.repository.cancelRun(runId);
 

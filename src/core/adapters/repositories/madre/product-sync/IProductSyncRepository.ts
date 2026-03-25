@@ -4,6 +4,9 @@ export interface IProductSyncRepository {
   bulkUpsert(items: ProductSyncItem[]): Promise<void>;
   findItemById(id: string): Promise<any | null>;
   findItemBySellerSku(marketplace: string, sellerSku: string): Promise<any | null>;
+  findMarketplaceSnapshotBySellerSku(sellerSku: string): Promise<any[]>;
+  listMarketplaceSnapshotsBySellerSku(limit: number, offset: number): Promise<any[]>;
+  countDistinctSellerSkus(): Promise<number>;
   listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]>;
   countSyncItems(marketplace: string): Promise<number>;
   findHistoryByProductSyncItemId(productSyncItemId: string): Promise<any[]>;

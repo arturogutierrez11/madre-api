@@ -11,6 +11,19 @@ import { CreatePublicationRunResponseDto } from './dto/CreatePublicationRunRespo
 export class PublicationRunsController {
   constructor(private readonly createPublicationRun: PublicationRunService) {}
 
+  @Get()
+  @ApiOperation({
+    summary: 'Listar todos los publication runs',
+    description: 'Devuelve todas las filas de la tabla publication_runs ordenadas por fecha de creación descendente.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Listado completo de publication runs'
+  })
+  async listRuns() {
+    return this.createPublicationRun.listRuns();
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Crear un nuevo proceso de publicación',
