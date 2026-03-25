@@ -143,6 +143,73 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     return rows[0] ?? null;
   }
 
+  async findMarketplaceSnapshotBySellerSku(sellerSku: string): Promise<any[]> {
+    return this.entityManager.query(
+      `
+      SELECT
+        marketplace,
+        external_id,
+        seller_sku,
+        marketplace_sku,
+        price,
+        stock,
+        status,
+        is_active,
+        last_seen_at,
+        updated_at
+      FROM product_sync_items
+      WHERE BINARY seller_sku = ?
+      ORDER BY marketplace ASC
+      `,
+      [sellerSku]
+    );
+  }
+
+  async listMarketplaceSnapshotsBySellerSku(limit: number, offset: number): Promise<any[]> {
+    const safeLimit = Number(limit);
+    const safeOffset = Number(offset);
+
+    return this.entityManager.query(
+      `
+      SELECT
+        psi.marketplace,
+        psi.external_id,
+        psi.seller_sku,
+        psi.marketplace_sku,
+        psi.price,
+        psi.stock,
+        psi.status,
+        psi.is_active,
+        psi.last_seen_at,
+        psi.updated_at
+      FROM product_sync_items psi
+      INNER JOIN (
+        SELECT seller_sku
+        FROM product_sync_items
+        GROUP BY seller_sku
+        ORDER BY seller_sku ASC
+        LIMIT ${safeLimit} OFFSET ${safeOffset}
+      ) skus ON skus.seller_sku = psi.seller_sku
+      ORDER BY psi.seller_sku ASC, psi.marketplace ASC
+      `
+    );
+  }
+
+  async countDistinctSellerSkus(): Promise<number> {
+    const rows = await this.entityManager.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM (
+        SELECT seller_sku
+        FROM product_sync_items
+        GROUP BY seller_sku
+      ) skus
+      `
+    );
+
+    return Number(rows[0]?.total ?? 0);
+  }
+
   /* ======================================
      HISTORY (ID)
   ====================================== */
