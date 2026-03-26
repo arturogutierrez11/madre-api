@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, Min, Max } from 'class-validator';
+import { IsInt, Min, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ClaimPublicationJobsDTO {
   @ApiProperty({
-    example: 10,
-    description: 'Cantidad máxima de jobs a reclamar',
+    example: 50,
+    description: 'Cantidad solicitada de jobs a reclamar. Si supera 50, el backend devuelve 50.',
     minimum: 1,
-    maximum: 50
+    default: 50
   })
   @Type(() => Number)
+  @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(50)
-  limit: number;
+  limit?: number;
 }

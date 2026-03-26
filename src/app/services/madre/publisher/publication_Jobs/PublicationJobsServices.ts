@@ -5,6 +5,8 @@ import { ISQLPublicationJobsRepository } from 'src/core/adapters/repositories/ma
 
 @Injectable()
 export class PublicationJobsServices {
+  private static readonly MAX_CLAIM_JOBS = 50;
+
   constructor(
     @Inject('ISQLPublicationJobsRepository')
     private readonly repository: ISQLPublicationJobsRepository
@@ -44,8 +46,17 @@ export class PublicationJobsServices {
     }
   }
 
-  async claimJobs(limit: number) {
-    return this.repository.claimJobs(limit);
+  async claimJobs(limit?: number) {
+    const safeLimit = Math.min(Math.max(Number(limit) || PublicationJobsServices.MAX_CLAIM_JOBS, 1), PublicationJobsServices.MAX_CLAIM_JOBS);
+
+    const items = await this.repository.claimJobs(safeLimit);
+
+    return {
+      requested: Number(limit) || PublicationJobsServices.MAX_CLAIM_JOBS,
+      limit: safeLimit,
+      claimed: items.length,
+      items
+    };
   }
 
   async getRunProgress(runId: number) {
