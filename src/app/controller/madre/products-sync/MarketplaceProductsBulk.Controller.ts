@@ -29,6 +29,26 @@ export class MarketplaceProductsBulkController {
     private readonly productSyncUpdateService: ProductSyncUpdateService
   ) {}
 
+  private buildStatusSummary(
+    marketplace: string,
+    total: number,
+    rows: Array<{ status: string; total: number }>
+  ) {
+    const normalizedRows = rows.map(row => ({
+      status: row.status,
+      total: Number(row.total ?? 0),
+      percentage: total > 0 ? Number(((Number(row.total ?? 0) / total) * 100).toFixed(2)) : 0
+    }));
+
+    return {
+      marketplace,
+      total,
+      statuses: normalizedRows,
+      statusMap: Object.fromEntries(normalizedRows.map(row => [row.status, row.total])),
+      statusPercentageMap: Object.fromEntries(normalizedRows.map(row => [row.status, row.percentage]))
+    };
+  }
+
   private buildMarketplaceSnapshot(rows: any[]) {
     const sellerSku = rows[0]?.seller_sku ?? null;
     const items = rows.map(row => ({
@@ -313,15 +333,17 @@ export class MarketplaceProductsBulkController {
     @Query('offset') offset = '0'
   ) {
     if (!marketplace) {
-      throw new Error('marketplace query param is required');
+      throw new BadRequestException('marketplace query param is required');
     }
 
     const parsedLimit = Math.min(Number(limit) || 100, 500);
     const parsedOffset = Number(offset) || 0;
 
-    const items = await this.productSyncRepository.listSyncItems(marketplace, parsedLimit, parsedOffset);
-
-    const total = await this.productSyncRepository.countSyncItems(marketplace);
+    const [items, total, statusRows] = await Promise.all([
+      this.productSyncRepository.listSyncItems(marketplace, parsedLimit, parsedOffset),
+      this.productSyncRepository.countSyncItems(marketplace),
+      this.productSyncRepository.countSyncItemsByStatus(marketplace)
+    ]);
 
     return {
       items,
@@ -329,6 +351,7 @@ export class MarketplaceProductsBulkController {
       offset: parsedOffset,
       count: items.length,
       total,
+      summary: this.buildStatusSummary(marketplace, total, statusRows),
       hasNext: parsedOffset + parsedLimit < total,
       nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
     };
@@ -360,24 +383,58 @@ Estados incluidos:
     status: 200,
     description: 'Resumen de productos por estado',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          status: {
-            type: 'string',
-            example: 'ACTIVE'
-          },
-          total: {
-            type: 'number',
-            example: 376
+      type: 'object',
+      properties: {
+        marketplace: {
+          type: 'string',
+          example: 'megatone'
+        },
+        total: {
+          type: 'number',
+          example: 1200
+        },
+        statuses: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                example: 'ACTIVE'
+              },
+              total: {
+                type: 'number',
+                example: 376
+              },
+              percentage: {
+                type: 'number',
+                example: 31.33
+              }
+            }
+          }
+        },
+        statusMap: {
+          type: 'object',
+          example: {
+            ACTIVE: 376,
+            PAUSED: 700,
+            ERROR: 124
           }
         }
       }
     }
   })
   async getStatusSummary(@Param('marketplace') marketplace: string) {
-    return this.productSyncRepository.countSyncItemsByStatus(marketplace);
+    if (!marketplace) {
+      throw new BadRequestException('marketplace es obligatorio');
+    }
+
+    const [total, rows] = await Promise.all([
+      this.productSyncRepository.countSyncItems(marketplace),
+      this.productSyncRepository.countSyncItemsByStatus(marketplace)
+    ]);
+
+    return this.buildStatusSummary(marketplace, total, rows);
   }
 
   @ApiOperation({
