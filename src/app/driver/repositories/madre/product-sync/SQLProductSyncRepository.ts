@@ -283,18 +283,23 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
   }
 
   async countSyncItemsByStatus(marketplace: string): Promise<{ status: string; total: number }[]> {
-    return this.entityManager.query(
+    const rows = await this.entityManager.query(
       `
     SELECT
       status,
       COUNT(*) AS total
     FROM product_sync_items
     WHERE marketplace = ?
-      AND status IN ('ACTIVE', 'PAUSED', 'PENDING', 'ERROR', 'DELETED')
     GROUP BY status
+    ORDER BY total DESC, status ASC
     `,
       [marketplace]
     );
+
+    return rows.map((row: any) => ({
+      status: row.status,
+      total: Number(row.total ?? 0)
+    }));
   }
 
   /* ======================================
