@@ -10,6 +10,8 @@ export class ProductStateHasher {
       product.meliSalePrice,
       product.stockQuantity,
       product.meliStatus,
+      product.amzStatus ?? '',
+      product.appStatus,
       product.manufacturingTime ?? ''
     ].join('|');
 
