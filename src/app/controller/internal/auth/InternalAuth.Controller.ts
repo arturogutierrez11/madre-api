@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestj
 import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 import { InternalAuthService } from 'src/app/services/auth/InternalAuthService';
 import { CreateRefreshTokenDto } from './dto/CreateRefreshToken.dto';
+import { CreateUserDto } from './dto/CreateUser.dto';
 import { FindUserByEmailDto } from './dto/FindUserByEmail.dto';
 import { FindValidRefreshTokenDto } from './dto/FindValidRefreshToken.dto';
 import { RevokeRefreshTokenDto } from './dto/RevokeRefreshToken.dto';
@@ -13,6 +14,28 @@ import { RevokeRefreshTokenDto } from './dto/RevokeRefreshToken.dto';
 @UseGuards(InternalApiKeyGuard)
 export class InternalAuthController {
   constructor(private readonly internalAuthService: InternalAuthService) {}
+
+  @Post('users')
+  @ApiOperation({ summary: 'Crea un usuario para autenticación interna' })
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({ status: 201, description: 'Usuario creado' })
+  async createUser(@Body() body: CreateUserDto) {
+    const user = await this.internalAuthService.createUser({
+      email: body.email,
+      passwordHash: body.passwordHash,
+      name: body.name,
+      role: body.role,
+      isActive: body.isActive ?? true
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive
+    };
+  }
 
   @Post('find-user-by-email')
   @ApiOperation({ summary: 'Busca un usuario por email para autenticación interna' })

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { IUserRepository } from 'src/core/adapters/repositories/auth/IUserRepository';
+import { CreateUserData, IUserRepository } from 'src/core/adapters/repositories/auth/IUserRepository';
 import { User } from 'src/core/entities/auth/User';
 
 @Injectable()
@@ -10,6 +10,46 @@ export class SQLUserRepository implements IUserRepository {
     @InjectEntityManager()
     private readonly entityManager: EntityManager
   ) {}
+
+  async create(data: CreateUserData): Promise<User> {
+    await this.entityManager.query(
+      `
+      INSERT INTO auth_users (
+        id,
+        email,
+        password_hash,
+        name,
+        role,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at
+      ) VALUES (UUID(), ?, ?, ?, ?, ?, NULL, NOW(), NOW())
+      `,
+      [data.email, data.passwordHash, data.name, data.role, data.isActive ? 1 : 0]
+    );
+
+    const result = await this.entityManager.query(
+      `
+      SELECT
+        id,
+        email,
+        password_hash,
+        name,
+        role,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at
+      FROM auth_users
+      WHERE email = ?
+      LIMIT 1
+      `,
+      [data.email]
+    );
+
+    return this.mapRowToUser(result[0]);
+  }
 
   async findByEmail(email: string): Promise<User | null> {
     const result = await this.entityManager.query(
