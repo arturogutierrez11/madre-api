@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRefreshTokenData, IRefreshTokenRepository } from 'src/core/adapters/repositories/auth/IRefreshTokenRepository';
-import { IUserRepository } from 'src/core/adapters/repositories/auth/IUserRepository';
+import { CreateUserData, IUserRepository } from 'src/core/adapters/repositories/auth/IUserRepository';
 import { RefreshToken } from 'src/core/entities/auth/RefreshToken';
 import { User } from 'src/core/entities/auth/User';
 
@@ -12,6 +12,43 @@ export class InternalAuthService {
     @Inject('IRefreshTokenRepository')
     private readonly refreshTokenRepository: IRefreshTokenRepository
   ) {}
+
+  async createUser(data: CreateUserData): Promise<User> {
+    const email = data.email.trim().toLowerCase();
+    const passwordHash = data.passwordHash.trim();
+    const name = data.name.trim();
+    const role = data.role.trim();
+
+    if (!email) {
+      throw new BadRequestException('email is required');
+    }
+
+    if (!passwordHash) {
+      throw new BadRequestException('passwordHash is required');
+    }
+
+    if (!name) {
+      throw new BadRequestException('name is required');
+    }
+
+    if (!role) {
+      throw new BadRequestException('role is required');
+    }
+
+    const existingUser = await this.userRepository.findByEmail(email);
+
+    if (existingUser) {
+      throw new BadRequestException('User already exists');
+    }
+
+    return this.userRepository.create({
+      email,
+      passwordHash,
+      name,
+      role,
+      isActive: data.isActive
+    });
+  }
 
   async findUserByEmail(email: string): Promise<User> {
     const normalizedEmail = email.trim().toLowerCase();
