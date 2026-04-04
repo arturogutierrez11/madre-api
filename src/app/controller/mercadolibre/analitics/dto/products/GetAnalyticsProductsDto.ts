@@ -2,6 +2,21 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsNumber, IsString, IsArray, IsIn } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
+function normalizeMarketplaceQuery(value: unknown): string[] | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+
+  const rawValues = Array.isArray(value) ? value : [value];
+
+  const normalized = rawValues
+    .flatMap(item => String(item).split(','))
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  return normalized.length ? Array.from(new Set(normalized)) : undefined;
+}
+
 export class GetAnalyticsProductsDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -51,10 +66,10 @@ export class GetAnalyticsProductsDto {
 
   @ApiPropertyOptional({
     description: 'Excluir productos publicados en estos marketplaces',
-    example: 'megatone,oncity'
+    example: ['megatone', 'fravega']
   })
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').map((v: string) => v.trim()) : value))
+  @Transform(({ value }) => normalizeMarketplaceQuery(value))
   @IsArray()
   excludeMarketplace?: string[];
 

@@ -83,6 +83,33 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
      🔹 FILTER BUILDER (REUTILIZABLE)
      ============================================================ */
 
+  private normalizedSellerSkuExpr(alias = 'p') {
+    return `TRIM(UPPER(SUBSTRING_INDEX(${alias}.seller_sku, '/', 1)))`;
+  }
+
+  private buildValidSellerSkuConditions(alias = 'p') {
+    const normalizedSku = this.normalizedSellerSkuExpr(alias);
+
+    return [
+      `${alias}.seller_sku IS NOT NULL`,
+      `${alias}.seller_sku != ''`,
+      `${normalizedSku} != ''`,
+      `LENGTH(${normalizedSku}) <= 13`
+    ];
+  }
+
+  private mergeWhereClause(whereClause: string, extraConditions: string[]) {
+    if (!extraConditions.length) {
+      return whereClause;
+    }
+
+    if (!whereClause) {
+      return `WHERE ${extraConditions.join(' AND ')}`;
+    }
+
+    return `${whereClause} AND ${extraConditions.join(' AND ')}`;
+  }
+
   private async buildFilters(params: ProductsFilters) {
     const where: string[] = [];
     const values: any[] = [];
@@ -231,15 +258,12 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
   async getProductsOverview(params: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(params);
+    const normalizedSku = this.normalizedSellerSkuExpr('p');
+    const fullWhereClause = this.mergeWhereClause(whereClause, this.buildValidSellerSkuConditions('p'));
 
     const sql = `
     SELECT
-      COUNT(DISTINCT CASE 
-        WHEN p.seller_sku IS NOT NULL 
-          AND p.seller_sku != ''
-          AND LENGTH(p.seller_sku) <= 13 
-        THEN p.seller_sku 
-      END) AS totalProducts,
+      COUNT(DISTINCT ${normalizedSku}) AS totalProducts,
 
       COALESCE(SUM(p.sold_quantity), 0) AS totalOrders,
 
@@ -259,7 +283,7 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
     JOIN mercadolibre_categories c ON c.id = p.category_id
     LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
 
-    ${whereClause}
+    ${fullWhereClause}
   `;
 
     const result = await this.entityManager.query(sql, values);
@@ -281,6 +305,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
   async saveSelectionToFolder(marketplaceId: number, filters: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(filters);
+    const normalizedSku = this.normalizedSellerSkuExpr('p');
+    const fullWhereClause = this.mergeWhereClause(whereClause, this.buildValidSellerSkuConditions('p'));
 
     const batchSize = 5000;
     let offset = 0;
@@ -290,7 +316,7 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
       const selectSql = `
       SELECT
         MIN(p.id) as id,
-        TRIM(UPPER(SUBSTRING_INDEX(p.seller_sku, '/', 1))) as seller_sku
+        ${normalizedSku} as seller_sku
       FROM mercadolibre_products p
       JOIN mercadolibre_categories c ON c.id = p.category_id
       LEFT JOIN (
@@ -298,11 +324,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
         FROM mercadolibre_item_visits
         GROUP BY item_id
       ) v ON v.item_id = p.id
-      ${whereClause}
-      AND p.seller_sku IS NOT NULL
-      AND p.seller_sku != ''
-      AND LENGTH(SUBSTRING_INDEX(p.seller_sku, '/', 1)) <= 13
-      GROUP BY TRIM(UPPER(SUBSTRING_INDEX(p.seller_sku, '/', 1)))
+      ${fullWhereClause}
+      GROUP BY ${normalizedSku}
       LIMIT ${batchSize} OFFSET ${offset}
     `;
 
@@ -383,6 +406,8 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
   async saveSelectionAsSegment(marketplaceId: number, filters: ProductsFilters) {
     const { whereClause, values } = await this.buildFilters(filters);
+    const normalizedSku = this.normalizedSellerSkuExpr('p');
+    const fullWhereClause = this.mergeWhereClause(whereClause, this.buildValidSellerSkuConditions('p'));
 
     const segmentInsert = `
     INSERT INTO marketplace_filter_segments
@@ -400,15 +425,16 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
     SELECT
       ?,
-      p.id,
-      p.seller_sku,
+      MIN(p.id),
+      ${normalizedSku},
       ?
 
     FROM mercadolibre_products p
     JOIN mercadolibre_categories c ON c.id = p.category_id
     LEFT JOIN mercadolibre_item_visits v ON v.item_id = p.id
 
-    ${whereClause}
+    ${fullWhereClause}
+    GROUP BY ${normalizedSku}
 
     ON DUPLICATE KEY UPDATE
       seller_sku = VALUES(seller_sku)
