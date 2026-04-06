@@ -7,6 +7,12 @@ export class MeliTokenSwaggerDTO {
   })
   app_key?: string;
 
+  @ApiPropertyOptional({
+    description: 'Client ID real de la app de Mercado Libre. Si no se envía, se usa app_key.',
+    example: '382706031020831'
+  })
+  client_id?: string;
+
   @ApiProperty({
     description: 'Access token devuelto por MercadoLibre',
     example: 'APP_USR-1234567890abcdef'

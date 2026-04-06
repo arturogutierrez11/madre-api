@@ -77,6 +77,7 @@ export class MeliTokenService {
 
     return {
       app_key: this.normalizeAppKey(token.app_key),
+      client_id: this.normalizeClientId(token.client_id, token.app_key),
       access_token: token.access_token.trim(),
       refresh_token: token.refresh_token.trim(),
       expires_in: token.expires_in,
@@ -87,5 +88,14 @@ export class MeliTokenService {
   private normalizeAppKey(appKey?: string): string {
     const normalized = appKey?.trim();
     return normalized && normalized.length > 0 ? normalized : MeliTokenService.DEFAULT_APP_KEY;
+  }
+
+  private normalizeClientId(clientId?: string, appKey?: string): string {
+    const normalizedClientId = clientId?.trim();
+    if (normalizedClientId) {
+      return normalizedClientId;
+    }
+
+    return this.normalizeAppKey(appKey);
   }
 }
