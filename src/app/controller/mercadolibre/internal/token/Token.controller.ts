@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiConsumes, ApiResponse, ApiSecurity } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiConsumes, ApiResponse, ApiSecurity, ApiQuery } from '@nestjs/swagger';
 import { MeliTokenSwaggerDTO } from './dto/MeliTokenSwaggerDTO';
 import { MeliTokenService } from 'src/app/services/mercadolibre/token/MeliTokenService';
 import { MeliTokenDTO } from 'src/core/entities/mercadolibre/tokens/dto/MeliTokenDTO';
@@ -28,8 +28,14 @@ Devuelve el último token almacenado para el **client_id actual**.
     description: 'Último token guardado',
     type: MeliTokenSwaggerDTO
   })
-  async getLastToken(): Promise<MeliTokenDTO | null> {
-    return this.meliTokenService.getLastToken();
+  @ApiQuery({
+    name: 'appKey',
+    required: false,
+    example: 'default',
+    description: 'Identificador lógico de la app de Mercado Libre'
+  })
+  async getLastToken(@Query('appKey') appKey?: string): Promise<MeliTokenDTO | null> {
+    return this.meliTokenService.getLastToken(appKey);
   }
 
   @Get('expired')
@@ -50,8 +56,14 @@ Evalúa si el token almacenado está expirado según **expires_at**.
       example: { expired: false }
     }
   })
-  async isTokenExpired(): Promise<{ expired: boolean }> {
-    const token = await this.meliTokenService.getLastToken();
+  @ApiQuery({
+    name: 'appKey',
+    required: false,
+    example: 'default',
+    description: 'Identificador lógico de la app de Mercado Libre'
+  })
+  async isTokenExpired(@Query('appKey') appKey?: string): Promise<{ expired: boolean }> {
+    const token = await this.meliTokenService.getLastToken(appKey);
 
     if (!token) {
       return { expired: true };

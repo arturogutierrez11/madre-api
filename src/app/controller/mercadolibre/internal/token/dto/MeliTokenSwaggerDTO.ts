@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class MeliTokenSwaggerDTO {
+  @ApiPropertyOptional({
+    description: 'Identificador lógico de la app de Mercado Libre',
+    example: 'default'
+  })
+  app_key?: string;
+
   @ApiProperty({
     description: 'Access token devuelto por MercadoLibre',
     example: 'APP_USR-1234567890abcdef'
