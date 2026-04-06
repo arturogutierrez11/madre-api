@@ -38,13 +38,14 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
       `
       INSERT INTO mercadolibre_tokens (
         app_key,
+        client_id,
         access_token,
         refresh_token,
         expires_in,
         expires_at
-      ) VALUES (?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [data.app_key, data.access_token, data.refresh_token, data.expires_in, data.expires_at]
+      [data.app_key, data.client_id, data.access_token, data.refresh_token, data.expires_in, data.expires_at]
     );
   }
 
@@ -62,6 +63,8 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
       `
       UPDATE mercadolibre_tokens
       SET
+        app_key = ?,
+        client_id = ?,
         access_token = ?,
         refresh_token = ?,
         expires_in = ?,
@@ -69,7 +72,7 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
         updated_at = NOW()
       WHERE id = ?
       `,
-      [data.access_token, data.refresh_token, data.expires_in, data.expires_at, token.id]
+      [data.app_key, data.client_id, data.access_token, data.refresh_token, data.expires_in, data.expires_at, token.id]
     );
   }
 }
