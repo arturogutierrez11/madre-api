@@ -1,5 +1,6 @@
 export type MeliTokenRow = {
   id: number;
+  app_key: string;
   access_token: string;
   refresh_token: string;
   expires_in: number;
