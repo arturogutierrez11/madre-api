@@ -3,6 +3,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { ISQLMeliTokenRepository } from 'src/core/adapters/repositories/mercadolibre/tokens/ISQLMeliTokenRepository';
 import { MeliTokenRow } from 'src/core/entities/mercadolibre/tokens/MeliTokenRow';
+import { MeliTokenDTO } from 'src/core/entities/mercadolibre/tokens/dto/MeliTokenDTO';
 
 @Injectable()
 export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
@@ -14,13 +15,17 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
   /**
    * Devuelve el último token guardado (single-token storage)
    */
-  async getToken(): Promise<MeliTokenRow | null> {
-    const result = await this.entityManager.query(`
+  async getToken(appKey: string): Promise<MeliTokenRow | null> {
+    const result = await this.entityManager.query(
+      `
       SELECT *
       FROM mercadolibre_tokens
+      WHERE app_key = ?
       ORDER BY id DESC
       LIMIT 1
-    `);
+    `,
+      [appKey]
+    );
 
     return result.length ? result[0] : null;
   }
@@ -28,35 +33,27 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
   /**
    * Inserta un nuevo token
    */
-  async saveToken(data: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    expires_at: Date;
-  }): Promise<void> {
+  async saveToken(data: MeliTokenDTO): Promise<void> {
     await this.entityManager.query(
       `
       INSERT INTO mercadolibre_tokens (
+        app_key,
+        client_id,
         access_token,
         refresh_token,
         expires_in,
         expires_at
-      ) VALUES (?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [data.access_token, data.refresh_token, data.expires_in, data.expires_at]
+      [data.app_key, data.client_id, data.access_token, data.refresh_token, data.expires_in, data.expires_at]
     );
   }
 
   /**
    * PISA el último token existente
    */
-  async updateLastToken(data: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    expires_at: Date;
-  }): Promise<void> {
-    const token = await this.getToken();
+  async updateLastToken(data: MeliTokenDTO): Promise<void> {
+    const token = await this.getToken(data.app_key ?? 'default');
 
     if (!token) {
       throw new Error('[SQLMeliTokenRepository] No token found to update');
@@ -66,6 +63,8 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
       `
       UPDATE mercadolibre_tokens
       SET
+        app_key = ?,
+        client_id = ?,
         access_token = ?,
         refresh_token = ?,
         expires_in = ?,
@@ -73,7 +72,7 @@ export class SQLMeliTokenRepository implements ISQLMeliTokenRepository {
         updated_at = NOW()
       WHERE id = ?
       `,
-      [data.access_token, data.refresh_token, data.expires_in, data.expires_at, token.id]
+      [data.app_key, data.client_id, data.access_token, data.refresh_token, data.expires_in, data.expires_at, token.id]
     );
   }
 }

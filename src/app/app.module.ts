@@ -20,6 +20,7 @@ import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs
 import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandMatch.Module';
 import { MegatoneBrandMatchModule } from './module/madre/brands/megatoneBrandMatch/MegatoneBrandMatch.Module';
 import { MeliProductsImportWorkerModule } from './module/madre/sync/MeliProductsImportWorker.module';
+import { InternalAuthModule } from './module/auth/InternalAuth.Module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { MeliProductsImportWorkerModule } from './module/madre/sync/MeliProducts
     MarketplaceFavoritesModule,
     BrandMatchModule,
     MegatoneBrandMatchModule,
+    InternalAuthModule,
 
     MeliProductsImportWorkerModule,
 

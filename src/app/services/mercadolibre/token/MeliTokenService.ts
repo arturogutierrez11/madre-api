@@ -4,6 +4,8 @@ import { MeliTokenDTO } from 'src/core/entities/mercadolibre/tokens/dto/MeliToke
 
 @Injectable()
 export class MeliTokenService {
+  private static readonly DEFAULT_APP_KEY = 'default';
+
   constructor(
     @Inject('ISQLMeliTokenRepository')
     private readonly meliTokenRepository: ISQLMeliTokenRepository
@@ -12,8 +14,8 @@ export class MeliTokenService {
   /**
    * Devuelve el último token asociado al client_id actual
    */
-  async getLastToken(): Promise<MeliTokenDTO | null> {
-    return this.meliTokenRepository.getToken();
+  async getLastToken(appKey?: string): Promise<MeliTokenDTO | null> {
+    return this.meliTokenRepository.getToken(this.normalizeAppKey(appKey));
   }
 
   /**
@@ -30,7 +32,7 @@ export class MeliTokenService {
   async upsertToken(token: MeliTokenDTO): Promise<void> {
     const tokenToSave = this.normalizeAndValidate(token);
 
-    const lastToken = await this.meliTokenRepository.getToken();
+    const lastToken = await this.meliTokenRepository.getToken(tokenToSave.app_key!);
 
     if (!lastToken) {
       await this.meliTokenRepository.saveToken(tokenToSave);
@@ -74,10 +76,26 @@ export class MeliTokenService {
     const expiresAt = new Date(Date.now() + token.expires_in * 1000);
 
     return {
+      app_key: this.normalizeAppKey(token.app_key),
+      client_id: this.normalizeClientId(token.client_id, token.app_key),
       access_token: token.access_token.trim(),
       refresh_token: token.refresh_token.trim(),
       expires_in: token.expires_in,
       expires_at: expiresAt
     };
+  }
+
+  private normalizeAppKey(appKey?: string): string {
+    const normalized = appKey?.trim();
+    return normalized && normalized.length > 0 ? normalized : MeliTokenService.DEFAULT_APP_KEY;
+  }
+
+  private normalizeClientId(clientId?: string, appKey?: string): string {
+    const normalizedClientId = clientId?.trim();
+    if (normalizedClientId) {
+      return normalizedClientId;
+    }
+
+    return this.normalizeAppKey(appKey);
   }
 }
