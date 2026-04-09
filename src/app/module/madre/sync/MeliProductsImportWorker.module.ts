@@ -12,9 +12,8 @@ import { SQLProductMadreRepository } from 'src/app/driver/repositories/madre/pro
 import { SQLMercadoLibreProductsRepository } from 'src/app/driver/repositories/mercadolibre/itemsDetails/SQLMercadoLibreProductsRepository';
 import { MeliProductsImportStateRedisCache } from 'src/app/driver/cache/redis/MeliProductsImportStateRedisCache';
 import { MeliProductsImportSyncLock } from 'src/app/driver/locks/redis/MeliProductsImportSyncLock';
-import { MercadoLibreApiClient } from 'src/app/driver/mercadolibre/api/MercadoLibreApiClient';
-import { MeliTokenService } from 'src/app/services/mercadolibre/token/MeliTokenService';
-import { SQLMeliTokenRepository } from 'src/app/driver/repositories/mercadolibre/tokens/SQLMeliTokenRepository';
+import { MeliApiDescriptionRepository } from 'src/core/drivers/repositories/meliapi/description/MeliApiDescriptionRepository';
+import { MeliApiCategoriesRepository } from 'src/core/drivers/repositories/meliapi/categories/MeliApiCategoriesRepository';
 
 @Module({
   imports: [
@@ -35,7 +34,6 @@ import { SQLMeliTokenRepository } from 'src/app/driver/repositories/mercadolibre
     SyncMadreDbFromMeliProductsDb,
     MeliProductsImportState,
     MeliProductImportHasher,
-    MeliTokenService,
 
     {
       provide: 'IProductsRepository',
@@ -54,12 +52,12 @@ import { SQLMeliTokenRepository } from 'src/app/driver/repositories/mercadolibre
       useClass: MeliProductsImportSyncLock
     },
     {
-      provide: 'IMercadoLibreApiClient',
-      useClass: MercadoLibreApiClient
+      provide: 'IMeliApiDescriptionRepository',
+      useClass: MeliApiDescriptionRepository
     },
     {
-      provide: 'ISQLMeliTokenRepository',
-      useClass: SQLMeliTokenRepository
+      provide: 'IMeliApiCategoriesRepository',
+      useClass: MeliApiCategoriesRepository
     }
   ],
   exports: [SyncMadreDbFromMeliProductsDb]

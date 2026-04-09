@@ -2,7 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ISQLMercadoLibreProductsRepository } from 'src/core/adapters/repositories/mercadolibre/itemsDetails/ISQLMercadoLibreProductsRepository';
 import { IProductsRepository, MeliProductImportData } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
-import { IMercadoLibreApiClient } from 'src/core/adapters/mercadolibre/api/IMercadoLibreApiClient';
+import { IMeliApiDescriptionRepository } from 'src/core/adapters/repositories/meliapi/description/IMeliApiDescriptionRepository';
+import { IMeliApiCategoriesRepository } from 'src/core/adapters/repositories/meliapi/categories/IMeliApiCategoriesRepository';
 import { MeliProductsImportState, MeliProductHashData } from './MeliProductsImportState';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
 import { cleanMeliDescription } from 'src/core/utils/cleanMeliDescription';
@@ -33,8 +34,11 @@ export class SyncMadreDbFromMeliProductsDb {
     @Inject('IMeliProductsImportSyncLock')
     private readonly syncLock: ISyncLock,
 
-    @Inject('IMercadoLibreApiClient')
-    private readonly meliApiClient: IMercadoLibreApiClient,
+    @Inject('IMeliApiDescriptionRepository')
+    private readonly meliApiDescriptionRepository: IMeliApiDescriptionRepository,
+
+    @Inject('IMeliApiCategoriesRepository')
+    private readonly meliApiCategoriesRepository: IMeliApiCategoriesRepository,
 
     private readonly productsStateService: MeliProductsImportState
   ) {}
@@ -139,7 +143,7 @@ export class SyncMadreDbFromMeliProductsDb {
   private async mapToImportData(mlProduct: MercadoLibreProduct): Promise<MeliProductImportData> {
     let description = '';
     try {
-      const descResult = await this.meliApiClient.getItemDescription(mlProduct.id);
+      const descResult = await this.meliApiDescriptionRepository.getItemDescription(mlProduct.id);
       const [cleaned] = cleanMeliDescription(descResult.plainText);
       description = cleaned ?? '';
     } catch (error: any) {
@@ -149,7 +153,7 @@ export class SyncMadreDbFromMeliProductsDb {
     let categoryPath = '';
     try {
       if (mlProduct.categoryId) {
-        categoryPath = await this.meliApiClient.getCategoryPath(mlProduct.categoryId);
+        categoryPath = await this.meliApiCategoriesRepository.getCategoryPath(mlProduct.categoryId);
       }
     } catch (error: any) {
       console.error(`[MeliProductsImport] Failed to fetch category for ${mlProduct.id}:`, error.message);
