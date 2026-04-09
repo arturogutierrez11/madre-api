@@ -6,6 +6,7 @@ import { IProductsRepository } from 'src/core/adapters/repositories/madre/produc
 import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
 import { AutomeliProductsState, ProductHashData } from './AutomeliProductsState';
 import { ProductStateHasher } from './ProductStateHasher';
+import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliProduct';
 import { Inject, Injectable } from '@nestjs/common';
 
 const FETCH_RETRIES = 3;
@@ -169,15 +170,21 @@ export class SyncMadreDbFromAutomeli {
       sku: product.sku,
       price: product.meliSalePrice,
       stock: product.stockQuantity,
-      status: this.mapStatus(product.meliStatus),
-      shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime)
+      status: this.mapStatus(product),
+      shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime),
+      meliStatus: product.meliStatus,
+      amzStatus: product.amzStatus
     }));
 
     return await this.productRepository.bulkUpdateFromAutomeli(updateData);
   }
 
-  private mapStatus(meliStatus: string): 'active' | 'inactive' {
-    return meliStatus === 'active' ? 'active' : 'inactive';
+  private mapStatus(product: AutomeliProduct): 'active' | 'inactive' {
+    const isActive =
+      product.appStatus === 1 &&
+      product.amzStatus === 'Disponible' &&
+      product.stockQuantity > 0;
+    return isActive ? 'active' : 'inactive';
   }
 
   private formatDuration(ms: number): string {
