@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { RedisClientModule } from '../../RedisClient.module';
+import { MeliProductsImportCronController } from 'src/app/controller/madre/sync/MeliProductsImportCron.Controller';
 
 import { SyncMadreDbFromMeliProductsDb } from 'src/core/interactors/madre/SyncMadreDbFromMeliProductsDb';
 import { MeliProductsImportState } from 'src/core/interactors/madre/MeliProductsImportState';
@@ -18,6 +20,7 @@ import { MeliApiCategoriesRepository } from 'src/core/drivers/repositories/melia
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     RedisClientModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
@@ -30,6 +33,7 @@ import { MeliApiCategoriesRepository } from 'src/core/drivers/repositories/melia
       autoLoadEntities: false
     })
   ],
+  controllers: [MeliProductsImportCronController],
   providers: [
     SyncMadreDbFromMeliProductsDb,
     MeliProductsImportState,
