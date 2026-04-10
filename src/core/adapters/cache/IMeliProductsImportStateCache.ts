@@ -1,6 +1,4 @@
-export interface IAutomeliProductsStateCache {
+export interface IMeliProductsImportStateCache {
   getHashes(skus: string[]): Promise<Map<string, string | null>>;
   setHashes(hashMap: Map<string, string>): Promise<void>;
 }
-
-

@@ -1,12 +1,12 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
-import { IAutomeliProductsStateCache } from 'src/core/adapters/cache/IAutomeliProductsStateCache';
+import { IMeliProductsImportStateCache } from 'src/core/adapters/cache/IMeliProductsImportStateCache';
 
-const REDIS_HASH_KEY = 'automeli_products_state';
-const HSET_CHUNK_FIELDS = 5000; // avoid huge argument lists
+const REDIS_HASH_KEY = 'meli_products_import_state';
+const HSET_CHUNK_FIELDS = 5000;
 
 @Injectable()
-export class AutomeliProductsStateRedisCache implements IAutomeliProductsStateCache, OnModuleDestroy {
+export class MeliProductsImportStateRedisCache implements IMeliProductsImportStateCache, OnModuleDestroy {
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   async onModuleDestroy(): Promise<void> {}
@@ -26,12 +26,9 @@ export class AutomeliProductsStateRedisCache implements IAutomeliProductsStateCa
     const entries: string[] = [];
     hashMap.forEach((hash, sku) => entries.push(sku, hash));
 
-    // entries are [field, value, field, value...]
     for (let i = 0; i < entries.length; i += HSET_CHUNK_FIELDS * 2) {
       const chunk = entries.slice(i, i + HSET_CHUNK_FIELDS * 2);
       await this.redis.hset(REDIS_HASH_KEY, ...chunk);
     }
   }
 }
-
-
