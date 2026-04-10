@@ -6,7 +6,8 @@ import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import {
   AutomeliBulkUpdateData,
   MeliProductImportData,
-  IProductsRepository
+  IProductsRepository,
+  ProductStatusSnapshot
 } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
 
@@ -115,6 +116,52 @@ export class SQLProductMadreRepository implements IProductsRepository {
       hasNext,
       nextOffset: hasNext ? offset + limit : null
     };
+  }
+
+  async findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]> {
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    if (!normalizedSkus.length) {
+      return [];
+    }
+
+    const placeholders = normalizedSkus.map(() => '?').join(', ');
+
+    const rows = await this.productosMadreEntityManager.query(
+      `
+        SELECT
+          sku,
+          precio AS price,
+          stock,
+          estado AS status
+        FROM productos_madre
+        WHERE sku IN (${placeholders})
+      `,
+      normalizedSkus
+    );
+
+    const rowMap = new Map<string, ProductStatusSnapshot>(
+      rows.map((row: any) => [
+        String(row.sku).trim().toUpperCase(),
+        {
+          sku: String(row.sku).trim().toUpperCase(),
+          price: Number(row.price ?? 0),
+          stock: Number(row.stock ?? 0),
+          status: row.status ?? null
+        }
+      ])
+    );
+
+    return normalizedSkus.map(sku => rowMap.get(sku) ?? {
+      sku,
+      price: 0,
+      stock: 0,
+      status: null
+    });
   }
 
   async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {

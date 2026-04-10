@@ -25,6 +25,13 @@ export interface MeliProductImportData {
   attributes?: ProductAttributes | null;
 }
 
+export interface ProductStatusSnapshot {
+  sku: string;
+  price: number;
+  stock: number;
+  status: string | null;
+}
+
 export interface IProductsRepository {
   findAll(
     pagination: PaginationParams,
@@ -32,6 +39,8 @@ export interface IProductsRepository {
       sku?: string;
     }
   ): Promise<PaginatedResult<ProductMadre>>;
+
+  findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]>;
 
   /**
    * Bulk update products from Automeli sync data
