@@ -28,6 +28,7 @@ export interface MeliProductImportData {
 export interface ProductStatusSnapshot {
   sku: string;
   price: number;
+  amazonPrice: number | null;
   stock: number;
   status: string | null;
 }
