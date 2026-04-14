@@ -8,6 +8,7 @@ export class ProductStateHasher {
     const hashString = [
       product.sku,
       product.meliSalePrice,
+      product.totalPrice,
       product.stockQuantity,
       product.meliStatus,
       product.amzStatus ?? '',

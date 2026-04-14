@@ -5,6 +5,7 @@ import { ProductAttributes, ProductMadre } from 'src/core/entities/madre/product
 export interface AutomeliBulkUpdateData {
   sku: string;
   price: number;
+  amazonPrice: number | null;
   stock: number;
   status: 'active' | 'inactive';
   shippingTime: number | null;

@@ -277,6 +277,10 @@ export class SQLProductMadreRepository implements IProductsRepository {
 
     const precioCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`).join(' ');
 
+    const amazonPriceCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amazonPrice ?? 'NULL'}`)
+      .join(' ');
+
     const stockCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`).join(' ');
 
     const estadoCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`).join(' ');
@@ -297,6 +301,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
     UPDATE productos_madre
     SET
       precio = CASE sku ${precioCases} ELSE precio END,
+      amazon_price = CASE sku ${amazonPriceCases} ELSE amazon_price END,
       stock = CASE sku ${stockCases} ELSE stock END,
       estado = CASE sku ${estadoCases} ELSE estado END,
       tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
@@ -305,6 +310,11 @@ export class SQLProductMadreRepository implements IProductsRepository {
       updated_at = CASE
         WHEN
           precio <> CASE sku ${precioCases} ELSE precio END
+          OR (
+            amazon_price <> CASE sku ${amazonPriceCases} ELSE amazon_price END
+            OR (amazon_price IS NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NOT NULL)
+            OR (amazon_price IS NOT NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NULL)
+          )
           OR stock <> CASE sku ${stockCases} ELSE stock END
           OR estado <> CASE sku ${estadoCases} ELSE estado END
           OR (
