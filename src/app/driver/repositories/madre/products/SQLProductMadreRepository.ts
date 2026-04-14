@@ -136,6 +136,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
         SELECT
           sku,
           precio AS price,
+          amazon_price AS amazonPrice,
           stock,
           estado AS status
         FROM productos_madre
@@ -150,6 +151,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
         {
           sku: String(row.sku).trim().toUpperCase(),
           price: Number(row.price ?? 0),
+          amazonPrice: row.amazonPrice != null ? Number(row.amazonPrice) : null,
           stock: Number(row.stock ?? 0),
           status: row.status ?? null
         }
@@ -159,6 +161,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
     return normalizedSkus.map(sku => rowMap.get(sku) ?? {
       sku,
       price: 0,
+      amazonPrice: null,
       stock: 0,
       status: null
     });
