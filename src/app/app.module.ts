@@ -21,6 +21,7 @@ import { MegatoneBrandMatchModule } from './module/madre/brands/megatoneBrandMat
 import { MeliProductsImportWorkerModule } from './module/madre/sync/MeliProductsImportWorker.module';
 import { InternalAuthModule } from './module/auth/InternalAuth.Module';
 import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-mlas/PromotionCampaignMlas.Module';
+import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-m
     MegatoneBrandMatchModule,
     InternalAuthModule,
     PromotionCampaignMlasModule,
+    TaxesCategoriesModule,
 
     MeliProductsImportWorkerModule,
 
