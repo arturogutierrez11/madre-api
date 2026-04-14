@@ -169,6 +169,7 @@ export class SyncMadreDbFromAutomeli {
     const updateData = products.map(({ product }) => ({
       sku: product.sku,
       price: product.meliSalePrice,
+      amazonPrice: product.totalPrice,
       stock: product.stockQuantity,
       status: this.mapStatus(product),
       shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime),
