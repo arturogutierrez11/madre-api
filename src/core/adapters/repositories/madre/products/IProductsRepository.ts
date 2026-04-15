@@ -6,6 +6,7 @@ export interface AutomeliBulkUpdateData {
   sku: string;
   price: number;
   amazonPrice: number | null;
+  maxWeight: number | null;
   stock: number;
   status: 'active' | 'inactive';
   shippingTime: number | null;
@@ -30,6 +31,7 @@ export interface ProductStatusSnapshot {
   sku: string;
   price: number;
   amazonPrice: number | null;
+  maxWeight: number | null;
   stock: number;
   status: string | null;
 }

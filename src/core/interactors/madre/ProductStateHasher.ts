@@ -9,6 +9,7 @@ export class ProductStateHasher {
       product.sku,
       product.meliSalePrice,
       product.totalPrice,
+      product.maxWeight ?? '',
       product.stockQuantity,
       product.meliStatus,
       product.amzStatus ?? '',
