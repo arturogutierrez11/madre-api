@@ -1,11 +1,26 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { ProductsService } from 'src/app/services/madre/products/ProductsService';
+import { BulkProductSnapshotDto } from './dto/BulkProductSnapshotDto';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
+
+  @Post('madre/status/bulk')
+  @ApiOperation({
+    summary: 'Consultar en bulk price, amazonPrice, maxWeight, stock y status por SKU',
+    description: 'Devuelve un listado simple con sku, price, amazonPrice, maxWeight, stock y status para los SKUs enviados.'
+  })
+  @ApiBody({ type: BulkProductSnapshotDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Snapshots de productos por SKU'
+  })
+  async getBulkStatusSnapshots(@Body() body: BulkProductSnapshotDto) {
+    return this.productService.getStatusSnapshotsBySkus(body.skus);
+  }
 
   @Get('madre')
   @ApiOperation({

@@ -5,7 +5,9 @@ import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import {
   AutomeliBulkUpdateData,
-  IProductsRepository
+  MeliProductImportData,
+  IProductsRepository,
+  ProductStatusSnapshot
 } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
 
@@ -56,9 +58,10 @@ export class SQLProductMadreRepository implements IProductsRepository {
       videoUrl: row.video_1 ?? undefined,
       attributes: this.parseAttributes(row.atributos),
       shippingTime: row.tiempo_envio ? Number(row.tiempo_envio) : undefined,
+      meliStatus: row.meli_status ?? null,
+      amzStatus: row.amz_status ?? null,
+      categoryMLA: row.categoria_mla ?? null,
       categoryId: row.categoria_mla,
-      meliStatus: row.meli_status,
-      amzStatus: row.amz_status,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     };
@@ -115,6 +118,58 @@ export class SQLProductMadreRepository implements IProductsRepository {
     };
   }
 
+  async findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]> {
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    if (!normalizedSkus.length) {
+      return [];
+    }
+
+    const placeholders = normalizedSkus.map(() => '?').join(', ');
+
+    const rows = await this.productosMadreEntityManager.query(
+      `
+        SELECT
+          sku,
+          precio AS price,
+          amazon_price AS amazonPrice,
+          max_weight AS maxWeight,
+          stock,
+          estado AS status
+        FROM productos_madre
+        WHERE sku IN (${placeholders})
+      `,
+      normalizedSkus
+    );
+
+    const rowMap = new Map<string, ProductStatusSnapshot>(
+      rows.map((row: any) => [
+        String(row.sku).trim().toUpperCase(),
+        {
+          sku: String(row.sku).trim().toUpperCase(),
+          price: Number(row.price ?? 0),
+          amazonPrice: row.amazonPrice != null ? Number(row.amazonPrice) : null,
+          maxWeight: row.maxWeight != null ? Number(row.maxWeight) : null,
+          stock: Number(row.stock ?? 0),
+          status: row.status ?? null
+        }
+      ])
+    );
+
+    return normalizedSkus.map(sku => rowMap.get(sku) ?? {
+      sku,
+      price: 0,
+      amazonPrice: null,
+      maxWeight: null,
+      stock: 0,
+      status: null
+    });
+  }
+
   async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
     if (products.length === 0) {
       return 0;
@@ -135,6 +190,87 @@ export class SQLProductMadreRepository implements IProductsRepository {
     return sku.replace(/'/g, "''");
   }
 
+  async bulkUpsertFromMeliProducts(products: MeliProductImportData[]): Promise<number> {
+    if (products.length === 0) return 0;
+
+    let totalAffected = 0;
+
+    for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
+      totalAffected += await this.executeBulkUpsertFromMeli(batch);
+    }
+
+    return totalAffected;
+  }
+
+  private async executeBulkUpsertFromMeli(products: MeliProductImportData[]): Promise<number> {
+    if (products.length === 0) return 0;
+
+    const placeholders = products
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .join(',');
+
+    const values: any[] = [];
+
+    for (const p of products) {
+      const imagesByPosition: (string | null)[] = new Array(10).fill(null);
+      for (const img of p.images) {
+        if (img.position >= 1 && img.position <= 10) {
+          imagesByPosition[img.position - 1] = img.url;
+        }
+      }
+
+      const attributesJson =
+        p.attributes != null ? JSON.stringify(p.attributes.raw) : null;
+
+      values.push(
+        p.sku,
+        p.title,
+        p.description,
+        p.categoryPath,
+        p.price,
+        p.stock,
+        p.status,
+        ...imagesByPosition,
+        p.categoryMLA ?? null,
+        attributesJson
+      );
+    }
+
+    const sql = `
+      INSERT INTO productos_madre (
+        sku, titulo, descripcion, categoria, precio, stock, estado,
+        imagen_1, imagen_2, imagen_3, imagen_4, imagen_5,
+        imagen_6, imagen_7, imagen_8, imagen_9, imagen_10,
+        categoria_mla, atributos
+      )
+      VALUES ${placeholders}
+      ON DUPLICATE KEY UPDATE
+        titulo = VALUES(titulo),
+        descripcion = VALUES(descripcion),
+        categoria = VALUES(categoria),
+        precio = VALUES(precio),
+        stock = VALUES(stock),
+        estado = VALUES(estado),
+        imagen_1 = VALUES(imagen_1),
+        imagen_2 = VALUES(imagen_2),
+        imagen_3 = VALUES(imagen_3),
+        imagen_4 = VALUES(imagen_4),
+        imagen_5 = VALUES(imagen_5),
+        imagen_6 = VALUES(imagen_6),
+        imagen_7 = VALUES(imagen_7),
+        imagen_8 = VALUES(imagen_8),
+        imagen_9 = VALUES(imagen_9),
+        imagen_10 = VALUES(imagen_10),
+        categoria_mla = VALUES(categoria_mla),
+        atributos = VALUES(atributos),
+        updated_at = NOW()
+    `;
+
+    const result = await this.productosMadreEntityManager.query(sql, values);
+    return result.affectedRows || 0;
+  }
+
   private async executeBulkUpdate(products: AutomeliBulkUpdateData[]): Promise<number> {
     if (products.length === 0) {
       return 0;
@@ -144,6 +280,14 @@ export class SQLProductMadreRepository implements IProductsRepository {
 
     const precioCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.price}`).join(' ');
 
+    const amazonPriceCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amazonPrice ?? 'NULL'}`)
+      .join(' ');
+
+    const maxWeightCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight ?? 'NULL'}`)
+      .join(' ');
+
     const stockCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`).join(' ');
 
     const estadoCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`).join(' ');
@@ -152,22 +296,54 @@ export class SQLProductMadreRepository implements IProductsRepository {
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
       .join(' ');
 
+    const meliStatusCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.meliStatus}'`)
+      .join(' ');
+
+    const amzStatusCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amzStatus != null ? `'${p.amzStatus}'` : 'NULL'}`)
+      .join(' ');
+
     const sql = `
     UPDATE productos_madre
     SET
       precio = CASE sku ${precioCases} ELSE precio END,
+      amazon_price = CASE sku ${amazonPriceCases} ELSE amazon_price END,
+      max_weight = CASE sku ${maxWeightCases} ELSE max_weight END,
       stock = CASE sku ${stockCases} ELSE stock END,
       estado = CASE sku ${estadoCases} ELSE estado END,
       tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
+      meli_status = CASE sku ${meliStatusCases} ELSE meli_status END,
+      amz_status = CASE sku ${amzStatusCases} ELSE amz_status END,
       updated_at = CASE
         WHEN
           precio <> CASE sku ${precioCases} ELSE precio END
+          OR (
+            amazon_price <> CASE sku ${amazonPriceCases} ELSE amazon_price END
+            OR (amazon_price IS NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NOT NULL)
+            OR (amazon_price IS NOT NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NULL)
+          )
+          OR (
+            max_weight <> CASE sku ${maxWeightCases} ELSE max_weight END
+            OR (max_weight IS NULL AND CASE sku ${maxWeightCases} ELSE max_weight END IS NOT NULL)
+            OR (max_weight IS NOT NULL AND CASE sku ${maxWeightCases} ELSE max_weight END IS NULL)
+          )
           OR stock <> CASE sku ${stockCases} ELSE stock END
           OR estado <> CASE sku ${estadoCases} ELSE estado END
           OR (
             tiempo_envio <> CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END
             OR (tiempo_envio IS NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NOT NULL)
             OR (tiempo_envio IS NOT NULL AND CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END IS NULL)
+          )
+          OR (
+            meli_status <> CASE sku ${meliStatusCases} ELSE meli_status END
+            OR (meli_status IS NULL AND CASE sku ${meliStatusCases} ELSE meli_status END IS NOT NULL)
+            OR (meli_status IS NOT NULL AND CASE sku ${meliStatusCases} ELSE meli_status END IS NULL)
+          )
+          OR (
+            amz_status <> CASE sku ${amzStatusCases} ELSE amz_status END
+            OR (amz_status IS NULL AND CASE sku ${amzStatusCases} ELSE amz_status END IS NOT NULL)
+            OR (amz_status IS NOT NULL AND CASE sku ${amzStatusCases} ELSE amz_status END IS NULL)
           )
         THEN NOW()
         ELSE updated_at

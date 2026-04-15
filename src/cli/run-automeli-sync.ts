@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from 'src/app/app.module';
+import { AutomeliSyncWorkerModule } from 'src/app/module/madre/sync/AutomeliSyncWorker.module';
 import { SyncMadreDbFromAutomeli } from 'src/core/interactors/madre/SyncMadreDbFromAutomeli';
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(AppModule);
+  const app = await NestFactory.createApplicationContext(AutomeliSyncWorkerModule);
 
   const syncService = app.get(SyncMadreDbFromAutomeli);
 

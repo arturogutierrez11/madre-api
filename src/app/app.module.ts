@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ProductModule } from './module/madre/products/Products.Module';
 import { BrandsModule } from './module/madre/brands/Brands.Module';
 import { CategoriesModule } from './module/madre/categories/Categories.Module';
-import { AutomeliSyncWorkerModule } from './module/madre/sync/AutomeliSyncWorker.module';
 import { ProductSyncModule } from './module/madre/product-sync/ProductSync.Module';
 import { TokenModule } from './module/mercadolibre/tokens/Token.Module';
 import { MercadoLibreItemsModule } from './module/mercadolibre/itemsId/MercadoLibreItems.Module';
@@ -19,8 +18,11 @@ import { PublicationRunsModule } from './module/madre/publisher/publication_Run/
 import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs/PublicationJobs.Module';
 import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandMatch.Module';
 import { MegatoneBrandMatchModule } from './module/madre/brands/megatoneBrandMatch/MegatoneBrandMatch.Module';
+import { MeliProductsImportWorkerModule } from './module/madre/sync/MeliProductsImportWorker.module';
 import { InternalAuthModule } from './module/auth/InternalAuth.Module';
 import { ProductDeltaModule } from './module/product-delta/ProductDelta.Module';
+import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-mlas/PromotionCampaignMlas.Module';
+import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 
 @Module({
   imports: [
@@ -30,7 +32,6 @@ import { ProductDeltaModule } from './module/product-delta/ProductDelta.Module';
     ProductModule,
     BrandsModule,
     CategoriesModule,
-    AutomeliSyncWorkerModule,
     ProductSyncModule,
     TokenModule,
     MercadoLibreItemsModule,
@@ -46,6 +47,10 @@ import { ProductDeltaModule } from './module/product-delta/ProductDelta.Module';
     MegatoneBrandMatchModule,
     InternalAuthModule,
     ProductDeltaModule,
+    PromotionCampaignMlasModule,
+    TaxesCategoriesModule,
+
+    MeliProductsImportWorkerModule,
 
     // PUBLCIADOR:
     // modulo de la tabla de publication_run
