@@ -170,6 +170,7 @@ export class SyncMadreDbFromAutomeli {
       sku: product.sku,
       price: product.meliSalePrice,
       amazonPrice: product.totalPrice,
+      maxWeight: product.maxWeight,
       stock: product.stockQuantity,
       status: this.mapStatus(product),
       shippingTime: this.hasher.parseManufacturingTime(product.manufacturingTime),

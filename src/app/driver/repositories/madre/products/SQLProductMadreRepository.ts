@@ -137,6 +137,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
           sku,
           precio AS price,
           amazon_price AS amazonPrice,
+          max_weight AS maxWeight,
           stock,
           estado AS status
         FROM productos_madre
@@ -152,6 +153,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
           sku: String(row.sku).trim().toUpperCase(),
           price: Number(row.price ?? 0),
           amazonPrice: row.amazonPrice != null ? Number(row.amazonPrice) : null,
+          maxWeight: row.maxWeight != null ? Number(row.maxWeight) : null,
           stock: Number(row.stock ?? 0),
           status: row.status ?? null
         }
@@ -162,6 +164,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
       sku,
       price: 0,
       amazonPrice: null,
+      maxWeight: null,
       stock: 0,
       status: null
     });
@@ -281,6 +284,10 @@ export class SQLProductMadreRepository implements IProductsRepository {
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amazonPrice ?? 'NULL'}`)
       .join(' ');
 
+    const maxWeightCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight ?? 'NULL'}`)
+      .join(' ');
+
     const stockCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`).join(' ');
 
     const estadoCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.status}'`).join(' ');
@@ -302,6 +309,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
     SET
       precio = CASE sku ${precioCases} ELSE precio END,
       amazon_price = CASE sku ${amazonPriceCases} ELSE amazon_price END,
+      max_weight = CASE sku ${maxWeightCases} ELSE max_weight END,
       stock = CASE sku ${stockCases} ELSE stock END,
       estado = CASE sku ${estadoCases} ELSE estado END,
       tiempo_envio = CASE sku ${tiempoEnvioCases} ELSE tiempo_envio END,
@@ -314,6 +322,11 @@ export class SQLProductMadreRepository implements IProductsRepository {
             amazon_price <> CASE sku ${amazonPriceCases} ELSE amazon_price END
             OR (amazon_price IS NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NOT NULL)
             OR (amazon_price IS NOT NULL AND CASE sku ${amazonPriceCases} ELSE amazon_price END IS NULL)
+          )
+          OR (
+            max_weight <> CASE sku ${maxWeightCases} ELSE max_weight END
+            OR (max_weight IS NULL AND CASE sku ${maxWeightCases} ELSE max_weight END IS NOT NULL)
+            OR (max_weight IS NOT NULL AND CASE sku ${maxWeightCases} ELSE max_weight END IS NULL)
           )
           OR stock <> CASE sku ${stockCases} ELSE stock END
           OR estado <> CASE sku ${estadoCases} ELSE estado END

@@ -10,8 +10,8 @@ export class ProductsController {
 
   @Post('madre/status/bulk')
   @ApiOperation({
-    summary: 'Consultar en bulk price, stock y status por SKU',
-    description: 'Devuelve un listado simple con sku, price, stock y status para los SKUs enviados.'
+    summary: 'Consultar en bulk price, amazonPrice, maxWeight, stock y status por SKU',
+    description: 'Devuelve un listado simple con sku, price, amazonPrice, maxWeight, stock y status para los SKUs enviados.'
   })
   @ApiBody({ type: BulkProductSnapshotDto })
   @ApiResponse({
