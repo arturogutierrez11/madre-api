@@ -5,6 +5,8 @@ import { ProductAttributes, ProductMadre } from 'src/core/entities/madre/product
 export interface AutomeliBulkUpdateData {
   sku: string;
   price: number;
+  amazonPrice: number | null;
+  maxWeight: number | null;
   stock: number;
   status: 'active' | 'inactive';
   shippingTime: number | null;
@@ -25,6 +27,15 @@ export interface MeliProductImportData {
   attributes?: ProductAttributes | null;
 }
 
+export interface ProductStatusSnapshot {
+  sku: string;
+  price: number;
+  amazonPrice: number | null;
+  maxWeight: number | null;
+  stock: number;
+  status: string | null;
+}
+
 export interface IProductsRepository {
   findAll(
     pagination: PaginationParams,
@@ -32,6 +43,8 @@ export interface IProductsRepository {
       sku?: string;
     }
   ): Promise<PaginatedResult<ProductMadre>>;
+
+  findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]>;
 
   /**
    * Bulk update products from Automeli sync data

@@ -20,8 +20,13 @@ import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandM
 import { MegatoneBrandMatchModule } from './module/madre/brands/megatoneBrandMatch/MegatoneBrandMatch.Module';
 import { MeliProductsImportWorkerModule } from './module/madre/sync/MeliProductsImportWorker.module';
 import { InternalAuthModule } from './module/auth/InternalAuth.Module';
+<<<<<<< HEAD
 import { ProductDeltaModule } from './module/madre/delta/ProductDelta.Module';
+=======
+import { ProductDeltaModule } from './module/product-delta/ProductDelta.Module';
+>>>>>>> origin/main
 import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-mlas/PromotionCampaignMlas.Module';
+import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 
 @Module({
   imports: [
@@ -47,6 +52,7 @@ import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-m
     InternalAuthModule,
     ProductDeltaModule,
     PromotionCampaignMlasModule,
+    TaxesCategoriesModule,
 
     MeliProductsImportWorkerModule,
 
