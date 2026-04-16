@@ -3,12 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductDeltaController } from 'src/app/controller/internal/product-delta/ProductDelta.Controller';
 import { SQLProductDeltaRepository } from 'src/app/driver/repositories/madre/delta/SQLProductDeltaRepository';
-import { SQLProductDeltaCursorRepository } from 'src/app/driver/repositories/product-delta/SQLProductDeltaCursorRepository';
-import { ProductDeltaService } from 'src/app/services/product-delta/ProductDeltaService';
+import { ProductDeltaService } from 'src/app/services/madre/delta/ProductDeltaService';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
@@ -21,16 +21,6 @@ import { ProductDeltaService } from 'src/app/services/product-delta/ProductDelta
     })
   ],
   controllers: [ProductDeltaController],
-  providers: [
-    ProductDeltaService,
-    {
-      provide: 'IProductDeltaRepository',
-      useClass: SQLProductDeltaRepository
-    },
-    {
-      provide: 'IProductDeltaCursorRepository',
-      useClass: SQLProductDeltaCursorRepository
-    }
-  ]
+  providers: [ProductDeltaService, { provide: 'IProductDeltaRepository', useClass: SQLProductDeltaRepository }]
 })
 export class ProductDeltaModule {}
