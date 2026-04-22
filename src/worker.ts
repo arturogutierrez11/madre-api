@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { MeliProductsImportWorkerModule } from './app/module/madre/sync/MeliProductsImportWorker.module';
+import { AutomeliSyncWorkerModule } from './app/module/madre/sync/AutomeliSyncWorker.module';
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(MeliProductsImportWorkerModule);
+  const app = await NestFactory.createApplicationContext(AutomeliSyncWorkerModule);
 
-  console.log('Worker started - Meli Products Import Cron active');
+  console.log('Worker started - Automeli Sync Cron active');
 
   // Keep the process running
   process.on('SIGINT', async () => {
