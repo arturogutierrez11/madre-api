@@ -25,7 +25,14 @@ export class PromotionCampaignMlasController {
   })
   @ApiBody({ type: BulkPromotionCampaignMlaDto })
   async checkExistsBulk(@Body() body: BulkPromotionCampaignMlaDto) {
-    const items = await this.service.checkExistsBulk(body.mlas);
+    const items = [...new Set(
+      (body.mlas ?? [])
+        .map(mla => String(mla ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )].map(mla => ({
+      mla,
+      exists: true
+    }));
 
     return {
       items,
