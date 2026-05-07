@@ -169,12 +169,14 @@ export class SQLAnalyticsProductsRepository implements IAnalyticsProductsReposit
 
     /* ===== EN CARPETA ===== */
     if (params.inMarketplace) {
+      const normalizedSku = this.normalizedSellerSkuExpr('p');
+
       where.push(`
         EXISTS (
           SELECT 1
           FROM marketplace_favorite_products mf
-          WHERE mf.product_id = p.id
-          AND mf.marketplace_id = ?
+          WHERE TRIM(UPPER(mf.seller_sku)) = ${normalizedSku}
+            AND mf.marketplace_id = ?
         )
       `);
       values.push(params.inMarketplace);
