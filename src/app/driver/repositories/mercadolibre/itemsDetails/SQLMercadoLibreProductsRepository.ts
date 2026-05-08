@@ -3,7 +3,8 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import {
   DeduplicatedBySkuResult,
-  ISQLMercadoLibreProductsRepository
+  ISQLMercadoLibreProductsRepository,
+  SellerSkuCategoryLookupResult
 } from 'src/core/adapters/repositories/mercadolibre/itemsDetails/ISQLMercadoLibreProductsRepository';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
@@ -50,6 +51,53 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
     );
 
     return rows;
+  }
+
+  async findCategoryIdsBySellerSkus(skus: string[]): Promise<SellerSkuCategoryLookupResult[]> {
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    if (!normalizedSkus.length) {
+      return [];
+    }
+
+    const placeholders = normalizedSkus.map(() => '?').join(',');
+
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          seller_sku,
+          id,
+          category_id
+        FROM mercadolibre_products
+        WHERE TRIM(UPPER(seller_sku)) IN (${placeholders})
+        ORDER BY seller_sku ASC, id ASC
+      `,
+      normalizedSkus
+    );
+
+    const grouped = new Map<string, SellerSkuCategoryLookupResult>();
+
+    for (const sku of normalizedSkus) {
+      grouped.set(sku, { sku, matches: [] });
+    }
+
+    for (const row of rows) {
+      const sku = String(row.seller_sku ?? '').trim().toUpperCase();
+      const current = grouped.get(sku) ?? { sku, matches: [] };
+
+      current.matches.push({
+        mlaId: String(row.id),
+        categoryId: row.category_id ?? null
+      });
+
+      grouped.set(sku, current);
+    }
+
+    return normalizedSkus.map(sku => grouped.get(sku)!);
   }
 
   private async executeBulkUpsert(sellerId: string, products: MercadoLibreProduct[]): Promise<number> {

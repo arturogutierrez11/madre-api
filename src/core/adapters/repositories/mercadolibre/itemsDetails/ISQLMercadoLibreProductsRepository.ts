@@ -7,6 +7,16 @@ export interface DeduplicatedBySkuResult {
   hasMore: boolean;
 }
 
+export interface MarketplaceCategoryMatch {
+  mlaId: string;
+  categoryId: string | null;
+}
+
+export interface SellerSkuCategoryLookupResult {
+  sku: string;
+  matches: MarketplaceCategoryMatch[];
+}
+
 export interface ISQLMercadoLibreProductsRepository {
   upsertBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
 
@@ -21,4 +31,6 @@ export interface ISQLMercadoLibreProductsRepository {
     limit: number;
     offset: number;
   }): Promise<DeduplicatedBySkuResult>;
+
+  findCategoryIdsBySellerSkus(skus: string[]): Promise<SellerSkuCategoryLookupResult[]>;
 }

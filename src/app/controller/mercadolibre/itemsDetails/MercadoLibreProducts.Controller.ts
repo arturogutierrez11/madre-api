@@ -4,6 +4,7 @@ import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiOkResponse } from '@nestjs
 import { MercadoLibreProductsService } from 'src/app/services/mercadolibre/itemsDetails/MercadoLibreProductsService';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 import { MercadoLibreProduct } from 'src/core/entities/mercadolibre/itemsDetails/MercadoLibreProduct';
+import { GetCategoriesBySkusDto } from './dto/GetCategoriesBySkus.dto';
 
 @ApiTags('Mercado Libre - Products')
 @Controller('/mercadolibre/products')
@@ -133,5 +134,57 @@ Ideal para:
     }
   ): Promise<MercadoLibreProduct[]> {
     return this.productsService.findManyByIds(body);
+  }
+
+  @Post('/categories/by-skus')
+  @ApiOperation({
+    summary: 'Busca category_id por seller_sku',
+    description: `
+Devuelve todos los MLAs/category_id encontrados para cada SKU enviado.
+
+📌 Nota:
+- Un mismo seller_sku puede tener más de una publicación en Mercado Libre
+- Por eso la respuesta devuelve todos los matches encontrados
+    `
+  })
+  @ApiBody({ type: GetCategoriesBySkusDto })
+  @ApiQuery({ name: 'limit', required: false, example: 50 })
+  @ApiQuery({ name: 'offset', required: false, example: 0 })
+  @ApiOkResponse({
+    description: 'Lista de categorías encontradas por SKU',
+    schema: {
+      example: {
+        items: [
+          {
+            sku: 'B0C33CHG99',
+            matches: [
+              { mlaId: 'MLA1424202023', categoryId: 'MLA456045' },
+              { mlaId: 'MLA1424209999', categoryId: 'MLA123456' }
+            ]
+          },
+          {
+            sku: 'B001RCD2DW',
+            matches: []
+          }
+        ],
+        total: 2,
+        limit: 50,
+        offset: 0,
+        count: 2,
+        hasNext: false,
+        nextOffset: null
+      }
+    }
+  })
+  async getCategoriesBySkus(
+    @Body() body: GetCategoriesBySkusDto,
+    @Query('limit') limit = '50',
+    @Query('offset') offset = '0'
+  ) {
+    return this.productsService.findCategoryIdsBySellerSkus({
+      skus: body.skus,
+      limit: Number(limit),
+      offset: Number(offset)
+    });
   }
 }
