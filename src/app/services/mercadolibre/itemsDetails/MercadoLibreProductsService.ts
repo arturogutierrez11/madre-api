@@ -70,4 +70,32 @@ export class MercadoLibreProductsService {
   async findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]> {
     return this.productsRepository.findManyByIds(params);
   }
+
+  async findCategoryIdsBySellerSkus(params: {
+    skus: string[];
+    limit?: number;
+    offset?: number;
+  }) {
+    const normalizedSkus = [...new Set(
+      (params.skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    const safeLimit = Math.min(Math.max(Number(params.limit) || 50, 1), 500);
+    const safeOffset = Math.max(Number(params.offset) || 0, 0);
+
+    const paginatedSkus = normalizedSkus.slice(safeOffset, safeOffset + safeLimit);
+    const items = await this.productsRepository.findCategoryIdsBySellerSkus(paginatedSkus);
+
+    return {
+      items,
+      total: normalizedSkus.length,
+      limit: safeLimit,
+      offset: safeOffset,
+      count: items.length,
+      hasNext: safeOffset + safeLimit < normalizedSkus.length,
+      nextOffset: safeOffset + safeLimit < normalizedSkus.length ? safeOffset + safeLimit : null
+    };
+  }
 }
