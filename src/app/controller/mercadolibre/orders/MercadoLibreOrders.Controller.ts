@@ -14,7 +14,7 @@ export class MercadoLibreOrdersController {
 Devuelve todas las órdenes que tienen algún valor en aporte_ml.
 
 📌 Reglas:
-- Solo incluye órdenes con aporte_ml no nulo
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
 - Filtra fecha_venta desde 2026-05-01
 - Responde paginado con cantidad total
     `
@@ -62,7 +62,7 @@ Devuelve todas las órdenes que tienen algún valor en aporte_ml.
 Devuelve un listado paginado con nro_venta, aporte_ml y fecha_venta.
 
 📌 Reglas:
-- Solo incluye órdenes con aporte_ml no nulo
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
 - Filtra fecha_venta desde 2026-05-01
     `
   })
@@ -88,7 +88,7 @@ Devuelve un listado paginado con nro_venta, aporte_ml y fecha_venta.
 Devuelve un listado paginado con nro_venta, aporte_ml y fecha_venta.
 
 📌 Reglas:
-- Solo incluye órdenes con aporte_ml no nulo
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
 - Permite filtrar por fromDate y toDate usando fecha_venta
 - Si no se envía fromDate, usa 2026-05-01
     `
@@ -119,6 +119,9 @@ Devuelve un listado paginado con nro_venta, aporte_ml y fecha_venta.
     summary: 'Resumen analítico de órdenes con aporte_ml',
     description: `
 Devuelve KPIs para dashboard a partir de órdenes con aporte_ml.
+
+📌 Reglas:
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
     `
   })
   @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
@@ -141,6 +144,9 @@ Devuelve KPIs para dashboard a partir de órdenes con aporte_ml.
     summary: 'Serie temporal de aporte_ml',
     description: `
 Devuelve una serie temporal para gráficos por día o por mes.
+
+📌 Reglas:
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
     `
   })
   @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
@@ -168,6 +174,9 @@ Devuelve una serie temporal para gráficos por día o por mes.
     summary: 'Breakdown de órdenes por estado',
     description: `
 Devuelve órdenes, revenue y aporte_ml agrupados por estado_orden.
+
+📌 Reglas:
+- Solo incluye órdenes con aporte_ml distinto de null y distinto de 0
     `
   })
   @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })

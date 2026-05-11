@@ -192,7 +192,7 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
     fromDate: string;
     toDate?: string;
   }): Promise<MercadoLibreOrdersByStatusItem[]> {
-    const whereParts = ['fecha_venta >= ?'];
+    const whereParts = ['aporte_ml IS NOT NULL', 'aporte_ml <> 0', 'fecha_venta >= ?'];
     const whereParams: any[] = [params.fromDate];
 
     if (params.toDate) {
@@ -205,7 +205,7 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
         SELECT
           COALESCE(LOWER(estado_orden), 'unknown') AS status,
           COUNT(*) AS orders,
-          COALESCE(SUM(CASE WHEN aporte_ml IS NOT NULL THEN aporte_ml ELSE 0 END), 0) AS aporte_ml,
+          COALESCE(SUM(aporte_ml), 0) AS aporte_ml,
           COALESCE(SUM(precio_venta), 0) AS revenue
         FROM orders
         WHERE ${whereParts.join(' AND ')}
@@ -224,7 +224,7 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
   }
 
   private buildAporteMlWhereClause(params: { fromDate: string; toDate?: string; status?: string }) {
-    const whereParts = ['aporte_ml IS NOT NULL', 'fecha_venta >= ?'];
+    const whereParts = ['aporte_ml IS NOT NULL', 'aporte_ml <> 0', 'fecha_venta >= ?'];
     const whereParams: any[] = [params.fromDate];
 
     if (params.toDate) {
