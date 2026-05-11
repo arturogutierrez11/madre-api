@@ -113,4 +113,74 @@ Devuelve un listado paginado con nro_venta, aporte_ml y fecha_venta.
       status
     });
   }
+
+  @Get('/analytics/overview')
+  @ApiOperation({
+    summary: 'Resumen analítico de órdenes con aporte_ml',
+    description: `
+Devuelve KPIs para dashboard a partir de órdenes con aporte_ml.
+    `
+  })
+  @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
+  @ApiQuery({ name: 'toDate', required: false, example: '2026-05-31 23:59:59' })
+  @ApiQuery({ name: 'status', required: false, example: 'paid' })
+  async getAporteMlOverview(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('status') status?: string
+  ) {
+    return this.ordersService.getAporteMlOverview({
+      fromDate,
+      toDate,
+      status
+    });
+  }
+
+  @Get('/analytics/aporte-ml/timeseries')
+  @ApiOperation({
+    summary: 'Serie temporal de aporte_ml',
+    description: `
+Devuelve una serie temporal para gráficos por día o por mes.
+    `
+  })
+  @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
+  @ApiQuery({ name: 'toDate', required: false, example: '2026-05-31 23:59:59' })
+  @ApiQuery({ name: 'status', required: false, example: 'paid' })
+  @ApiQuery({ name: 'groupBy', required: false, example: 'day' })
+  async getAporteMlTimeSeries(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('status') status?: string,
+    @Query('groupBy') groupBy?: string
+  ) {
+    return {
+      items: await this.ordersService.getAporteMlTimeSeries({
+        fromDate,
+        toDate,
+        status,
+        groupBy
+      })
+    };
+  }
+
+  @Get('/analytics/by-status')
+  @ApiOperation({
+    summary: 'Breakdown de órdenes por estado',
+    description: `
+Devuelve órdenes, revenue y aporte_ml agrupados por estado_orden.
+    `
+  })
+  @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
+  @ApiQuery({ name: 'toDate', required: false, example: '2026-05-31 23:59:59' })
+  async getOrdersByStatus(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string
+  ) {
+    return {
+      items: await this.ordersService.getOrdersByStatus({
+        fromDate,
+        toDate
+      })
+    };
+  }
 }
