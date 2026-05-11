@@ -39,6 +39,28 @@ export interface MercadoLibreOrderAporteMlSummary {
   fechaVenta: string | null;
 }
 
+export interface MercadoLibreOrdersAporteMlOverview {
+  totalOrders: number;
+  totalAporteMl: number;
+  avgAporteMl: number;
+  totalRevenue: number;
+  avgTicket: number;
+}
+
+export interface MercadoLibreOrdersAporteMlTimeSeriesItem {
+  date: string;
+  aporteMl: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface MercadoLibreOrdersByStatusItem {
+  status: string;
+  orders: number;
+  aporteMl: number;
+  revenue: number;
+}
+
 export interface ISQLMercadoLibreOrdersRepository {
   findOrdersWithAporteMl(params: {
     limit: number;
@@ -54,4 +76,22 @@ export interface ISQLMercadoLibreOrdersRepository {
     toDate?: string;
     status?: string;
   }): Promise<PaginatedResult<MercadoLibreOrderAporteMlSummary>>;
+
+  getAporteMlOverview(params: {
+    fromDate: string;
+    toDate?: string;
+    status?: string;
+  }): Promise<MercadoLibreOrdersAporteMlOverview>;
+
+  getAporteMlTimeSeries(params: {
+    fromDate: string;
+    toDate?: string;
+    status?: string;
+    groupBy: 'day' | 'month';
+  }): Promise<MercadoLibreOrdersAporteMlTimeSeriesItem[]>;
+
+  getOrdersByStatus(params: {
+    fromDate: string;
+    toDate?: string;
+  }): Promise<MercadoLibreOrdersByStatusItem[]>;
 }

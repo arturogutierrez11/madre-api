@@ -4,7 +4,10 @@ import { EntityManager } from 'typeorm';
 import {
   ISQLMercadoLibreOrdersRepository,
   MercadoLibreOrderAporteMlSummary,
-  MercadoLibreOrderWithAporteMl
+  MercadoLibreOrderWithAporteMl,
+  MercadoLibreOrdersAporteMlOverview,
+  MercadoLibreOrdersAporteMlTimeSeriesItem,
+  MercadoLibreOrdersByStatusItem
 } from 'src/core/adapters/repositories/mercadolibre/orders/ISQLMercadoLibreOrdersRepository';
 import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
 
@@ -116,6 +119,108 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
       params.limit,
       params.offset
     );
+  }
+
+  async getAporteMlOverview(params: {
+    fromDate: string;
+    toDate?: string;
+    status?: string;
+  }): Promise<MercadoLibreOrdersAporteMlOverview> {
+    const { whereClause, whereParams } = this.buildAporteMlWhereClause(params);
+
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          COUNT(*) AS total_orders,
+          COALESCE(SUM(aporte_ml), 0) AS total_aporte_ml,
+          COALESCE(AVG(aporte_ml), 0) AS avg_aporte_ml,
+          COALESCE(SUM(precio_venta), 0) AS total_revenue,
+          COALESCE(AVG(precio_venta), 0) AS avg_ticket
+        FROM orders
+        ${whereClause}
+      `,
+      whereParams
+    );
+
+    const row = rows?.[0] ?? {};
+
+    return {
+      totalOrders: Number(row.total_orders ?? 0),
+      totalAporteMl: Number(row.total_aporte_ml ?? 0),
+      avgAporteMl: Number(row.avg_aporte_ml ?? 0),
+      totalRevenue: Number(row.total_revenue ?? 0),
+      avgTicket: Number(row.avg_ticket ?? 0)
+    };
+  }
+
+  async getAporteMlTimeSeries(params: {
+    fromDate: string;
+    toDate?: string;
+    status?: string;
+    groupBy: 'day' | 'month';
+  }): Promise<MercadoLibreOrdersAporteMlTimeSeriesItem[]> {
+    const { whereClause, whereParams } = this.buildAporteMlWhereClause(params);
+    const periodExpression =
+      params.groupBy === 'month'
+        ? "DATE_FORMAT(fecha_venta, '%Y-%m')"
+        : "DATE_FORMAT(fecha_venta, '%Y-%m-%d')";
+
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          ${periodExpression} AS period,
+          COALESCE(SUM(aporte_ml), 0) AS aporte_ml,
+          COUNT(*) AS orders,
+          COALESCE(SUM(precio_venta), 0) AS revenue
+        FROM orders
+        ${whereClause}
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+      whereParams
+    );
+
+    return rows.map((row: any) => ({
+      date: String(row.period),
+      aporteMl: Number(row.aporte_ml ?? 0),
+      orders: Number(row.orders ?? 0),
+      revenue: Number(row.revenue ?? 0)
+    }));
+  }
+
+  async getOrdersByStatus(params: {
+    fromDate: string;
+    toDate?: string;
+  }): Promise<MercadoLibreOrdersByStatusItem[]> {
+    const whereParts = ['fecha_venta >= ?'];
+    const whereParams: any[] = [params.fromDate];
+
+    if (params.toDate) {
+      whereParts.push('fecha_venta <= ?');
+      whereParams.push(params.toDate);
+    }
+
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          COALESCE(LOWER(estado_orden), 'unknown') AS status,
+          COUNT(*) AS orders,
+          COALESCE(SUM(CASE WHEN aporte_ml IS NOT NULL THEN aporte_ml ELSE 0 END), 0) AS aporte_ml,
+          COALESCE(SUM(precio_venta), 0) AS revenue
+        FROM orders
+        WHERE ${whereParts.join(' AND ')}
+        GROUP BY status
+        ORDER BY orders DESC, status ASC
+      `,
+      whereParams
+    );
+
+    return rows.map((row: any) => ({
+      status: String(row.status),
+      orders: Number(row.orders ?? 0),
+      aporteMl: Number(row.aporte_ml ?? 0),
+      revenue: Number(row.revenue ?? 0)
+    }));
   }
 
   private buildAporteMlWhereClause(params: { fromDate: string; toDate?: string; status?: string }) {

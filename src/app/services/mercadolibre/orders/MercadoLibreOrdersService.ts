@@ -44,6 +44,44 @@ export class MercadoLibreOrdersService {
     });
   }
 
+  async getAporteMlOverview(params: {
+    fromDate?: string;
+    toDate?: string;
+    status?: string;
+  }) {
+    return this.ordersRepository.getAporteMlOverview({
+      fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
+      toDate: params.toDate?.trim() || undefined,
+      status: this.toSafeStatus(params.status)
+    });
+  }
+
+  async getAporteMlTimeSeries(params: {
+    fromDate?: string;
+    toDate?: string;
+    status?: string;
+    groupBy?: string;
+  }) {
+    const normalizedGroupBy = String(params.groupBy ?? 'day').trim().toLowerCase();
+
+    return this.ordersRepository.getAporteMlTimeSeries({
+      fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
+      toDate: params.toDate?.trim() || undefined,
+      status: this.toSafeStatus(params.status),
+      groupBy: normalizedGroupBy === 'month' ? 'month' : 'day'
+    });
+  }
+
+  async getOrdersByStatus(params: {
+    fromDate?: string;
+    toDate?: string;
+  }) {
+    return this.ordersRepository.getOrdersByStatus({
+      fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
+      toDate: params.toDate?.trim() || undefined
+    });
+  }
+
   private toSafeLimit(value?: number) {
     return Math.min(Math.max(Number(value) || 50, 1), 500);
   }
