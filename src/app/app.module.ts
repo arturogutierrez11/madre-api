@@ -14,6 +14,7 @@ import { AnalyticsCategoriesModule } from './module/mercadolibre/analitics/Analy
 import { AnalyticsModule } from './module/mercadolibre/analitics/AnalyticsProducts.Module';
 import { AnalyticsBrandsModule } from './module/mercadolibre/analitics/AnalyticsBrands.Module';
 import { MarketplaceFavoritesModule } from './module/mercadolibre/analitics/AnalitycsFavorites.Module';
+import { MercadoLibreOrdersModule } from './module/mercadolibre/orders/MercadoLibreOrders.Module';
 import { PublicationRunsModule } from './module/madre/publisher/publication_Run/PublicationRuns.Module';
 import { PublicationJobsModule } from './module/madre/publisher/publication_Jobs/PublicationJobs.Module';
 import { BrandMatchModule } from './module/madre/brands/fravegaBrandMatch/BrandMatch.Module';
@@ -43,6 +44,7 @@ import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
     AnalyticsModule,
     AnalyticsBrandsModule,
     MarketplaceFavoritesModule,
+    MercadoLibreOrdersModule,
     BrandMatchModule,
     MegatoneBrandMatchModule,
     InternalAuthModule,
