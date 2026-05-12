@@ -2,6 +2,7 @@ import {
   AutomeliPaginatedResponse,
   IAutomeliProductsRepository
 } from 'src/core/adapters/repositories/automeli/products/IAutomeliProductsRepository';
+import { IAutomeliProductSnapshotsRepository } from 'src/core/adapters/repositories/automeli/snapshots/IAutomeliProductSnapshotsRepository';
 import { IProductsRepository } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ISyncLock } from 'src/core/adapters/locks/ISyncLock';
 import { AutomeliProductsState, ProductHashData } from './AutomeliProductsState';
@@ -14,6 +15,7 @@ const FETCH_RETRY_BASE_DELAY_MS = 500;
 
 interface SyncStats {
   totalFetched: number;
+  totalSnapshotsUpserted: number;
   totalChanged: number;
   totalUpdated: number;
   totalHashesUpdated: number;
@@ -37,6 +39,9 @@ export class SyncMadreDbFromAutomeli {
     @Inject('IProductsRepository')
     private readonly productRepository: IProductsRepository,
 
+    @Inject('IAutomeliProductSnapshotsRepository')
+    private readonly automeliSnapshotsRepository: IAutomeliProductSnapshotsRepository,
+
     @Inject('ISyncLock')
     private readonly syncLock: ISyncLock,
 
@@ -50,6 +55,7 @@ export class SyncMadreDbFromAutomeli {
   async runSync(): Promise<SyncStats> {
     const stats: SyncStats = {
       totalFetched: 0,
+      totalSnapshotsUpserted: 0,
       totalChanged: 0,
       totalUpdated: 0,
       totalHashesUpdated: 0,
@@ -83,17 +89,23 @@ export class SyncMadreDbFromAutomeli {
 
         const { response } = fetchResult;
         const products = response.data;
+        const productsForMadre = products.filter(product => product.listingTypeId === 'gold_special');
         stats.totalFetched += products.length;
 
         console.log(`[AutomeliSync] Fetched ${products.length} products (total from API: ${response.count})`);
 
         if (products.length > 0) {
-          const changedProducts = await this.productsStateService.filterChangedProducts(products);
+          const snapshotAffected = await this.automeliSnapshotsRepository.upsertBulk(products);
+          stats.totalSnapshotsUpserted += snapshotAffected;
+        }
+
+        if (productsForMadre.length > 0) {
+          const changedProducts = await this.productsStateService.filterChangedProducts(productsForMadre);
           stats.totalChanged += changedProducts.length;
-          stats.totalSkipped += products.length - changedProducts.length;
+          stats.totalSkipped += productsForMadre.length - changedProducts.length;
 
           console.log(
-            `[AutomeliSync] Found ${changedProducts.length} changed products (${products.length - changedProducts.length} unchanged)`
+            `[AutomeliSync] Found ${changedProducts.length} changed gold_special products (${productsForMadre.length - changedProducts.length} unchanged)`
           );
 
           if (changedProducts.length > 0) {
@@ -216,6 +228,7 @@ ${separator}
 
   ─── PRODUCTS ───────────────────────────────────
   Total fetched:         ${stats.totalFetched.toLocaleString()}
+  Snapshots upserted:    ${stats.totalSnapshotsUpserted.toLocaleString()}
   Changed (need update): ${stats.totalChanged.toLocaleString()} (${changeRate}%)
   Skipped (unchanged):   ${stats.totalSkipped.toLocaleString()}
 

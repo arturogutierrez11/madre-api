@@ -55,8 +55,27 @@ export class SQLMercadoLibreItemsRepository implements ISQLMercadoLibreItemsRepo
     { limit, lastId }: { limit: number; lastId?: number },
     filters?: { sellerId?: string; status?: string }
   ): Promise<CursorPaginatedResult<string>> {
+    return this.findByDateScope({ limit, lastId }, filters, false);
+  }
+
+  async findToday(
+    { limit, lastId }: { limit: number; lastId?: number },
+    filters?: { sellerId?: string; status?: string }
+  ): Promise<CursorPaginatedResult<string>> {
+    return this.findByDateScope({ limit, lastId }, filters, true);
+  }
+
+  private async findByDateScope(
+    { limit, lastId }: { limit: number; lastId?: number },
+    filters: { sellerId?: string; status?: string } | undefined,
+    onlyToday: boolean
+  ): Promise<CursorPaginatedResult<string>> {
     const where: string[] = [];
     const params: any[] = [];
+
+    if (onlyToday) {
+      where.push('DATE(created_at) = CURDATE()');
+    }
 
     if (filters?.sellerId) {
       where.push('seller_id = ?');

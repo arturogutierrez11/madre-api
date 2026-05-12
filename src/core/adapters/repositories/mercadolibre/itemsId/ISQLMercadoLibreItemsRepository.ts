@@ -17,4 +17,21 @@ export interface ISQLMercadoLibreItemsRepository {
     count: number;
     hasNext: boolean;
   }>;
+
+  findToday(
+    pagination: {
+      limit: number;
+      lastId?: number;
+    },
+    filters?: {
+      sellerId?: string;
+      status?: string;
+    }
+  ): Promise<{
+    items: string[];
+    limit: number;
+    lastId: number | null;
+    count: number;
+    hasNext: boolean;
+  }>;
 }

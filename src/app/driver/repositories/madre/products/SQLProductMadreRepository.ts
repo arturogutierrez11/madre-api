@@ -7,7 +7,8 @@ import {
   AutomeliBulkUpdateData,
   MeliProductImportData,
   IProductsRepository,
-  ProductStatusSnapshot
+  ProductStatusSnapshot,
+  ProductWeightUpdateData
 } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
 import { ProductImage, ProductMadre } from 'src/core/entities/madre/products/ProductMadre';
 
@@ -168,6 +169,39 @@ export class SQLProductMadreRepository implements IProductsRepository {
       stock: 0,
       status: null
     });
+  }
+
+  async findSkusWithoutMaxWeight(): Promise<string[]> {
+    const rows: any[] = await this.productosMadreEntityManager.query(
+      `
+        SELECT sku
+        FROM productos_madre
+        WHERE sku IS NOT NULL
+          AND TRIM(sku) <> ''
+          AND max_weight IS NULL
+      `
+    );
+
+    return [...new Set(
+      rows
+        .map((row: any) => String(row.sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+  }
+
+  async bulkUpdateMaxWeightBySku(products: ProductWeightUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    let totalAffected = 0;
+
+    for (let i = 0; i < products.length; i += BULK_UPDATE_BATCH_SIZE) {
+      const batch = products.slice(i, i + BULK_UPDATE_BATCH_SIZE);
+      totalAffected += await this.executeBulkMaxWeightUpdate(batch);
+    }
+
+    return totalAffected;
   }
 
   async bulkUpdateFromAutomeli(products: AutomeliBulkUpdateData[]): Promise<number> {
@@ -350,6 +384,34 @@ export class SQLProductMadreRepository implements IProductsRepository {
       END
     WHERE sku IN (${skus})
   `;
+
+    const result = await this.productosMadreEntityManager.query(sql);
+    return result.affectedRows || 0;
+  }
+
+  private async executeBulkMaxWeightUpdate(products: ProductWeightUpdateData[]): Promise<number> {
+    if (products.length === 0) {
+      return 0;
+    }
+
+    const skus = products.map(p => `'${this.escapeSku(p.sku)}'`).join(',');
+    const maxWeightCases = products
+      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight}`)
+      .join(' ');
+
+    const sql = `
+      UPDATE productos_madre
+      SET
+        max_weight = CASE sku ${maxWeightCases} ELSE max_weight END,
+        updated_at = CASE
+          WHEN
+            max_weight <> CASE sku ${maxWeightCases} ELSE max_weight END
+            OR (max_weight IS NULL AND CASE sku ${maxWeightCases} ELSE max_weight END IS NOT NULL)
+          THEN NOW()
+          ELSE updated_at
+        END
+      WHERE sku IN (${skus})
+    `;
 
     const result = await this.productosMadreEntityManager.query(sql);
     return result.affectedRows || 0;

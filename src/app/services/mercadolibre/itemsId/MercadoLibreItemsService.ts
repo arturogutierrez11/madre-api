@@ -39,4 +39,11 @@ export class MercadoLibreItemsService {
   ): Promise<CursorPaginatedResult<string>> {
     return this.itemsRepository.findAll(pagination, filters);
   }
+
+  async getTodayItemsPaginated(
+    pagination: { limit: number; lastId?: number },
+    filters?: { sellerId?: string; status?: string }
+  ): Promise<CursorPaginatedResult<string>> {
+    return this.itemsRepository.findToday(pagination, filters);
+  }
 }

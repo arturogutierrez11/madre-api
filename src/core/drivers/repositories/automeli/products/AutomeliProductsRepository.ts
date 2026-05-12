@@ -30,12 +30,10 @@ export class AutomeliProductsRepository implements IAutomeliProductsRepository {
       });
 
       const rawData = response.data?.data ?? [];
-      const filteredData = rawData
-        .map(mapAutomeliProduct)
-        .filter(p => p.listingTypeId === 'gold_special');
+      const mappedData = rawData.map(mapAutomeliProduct);
 
       return {
-        data: filteredData,
+        data: mappedData,
         next_cursor: response.data?.next_cursor ?? null,
         has_more: response.data?.has_more ?? false,
         count: response.data?.count ?? 0

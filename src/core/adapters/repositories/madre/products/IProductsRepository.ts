@@ -36,6 +36,11 @@ export interface ProductStatusSnapshot {
   status: string | null;
 }
 
+export interface ProductWeightUpdateData {
+  sku: string;
+  maxWeight: number;
+}
+
 export interface IProductsRepository {
   findAll(
     pagination: PaginationParams,
@@ -45,6 +50,10 @@ export interface IProductsRepository {
   ): Promise<PaginatedResult<ProductMadre>>;
 
   findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]>;
+
+  findSkusWithoutMaxWeight(): Promise<string[]>;
+
+  bulkUpdateMaxWeightBySku(products: ProductWeightUpdateData[]): Promise<number>;
 
   /**
    * Bulk update products from Automeli sync data

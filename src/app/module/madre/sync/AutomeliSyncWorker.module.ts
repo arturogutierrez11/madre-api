@@ -8,10 +8,12 @@ import { RedisClientModule } from '../../RedisClient.module';
 import { AutomeliSyncController } from 'src/app/controller/madre/sync/AutomeliSyncCron.Controller';
 
 import { SyncMadreDbFromAutomeli } from 'src/core/interactors/madre/SyncMadreDbFromAutomeli';
+import { BackfillMadreProductWeightsFromAutomeli } from 'src/core/interactors/madre/BackfillMadreProductWeightsFromAutomeli';
 import { AutomeliProductsState } from 'src/core/interactors/madre/AutomeliProductsState';
 import { ProductStateHasher } from 'src/core/interactors/madre/ProductStateHasher';
 
 import { SQLProductMadreRepository } from 'src/app/driver/repositories/madre/products/SQLProductMadreRepository';
+import { SQLAutomeliProductSnapshotsRepository } from 'src/app/driver/repositories/automeli/snapshots/SQLAutomeliProductSnapshotsRepository';
 import { AutomeliProductsRepository } from 'src/core/drivers/repositories/automeli/products/AutomeliProductsRepository';
 import { AutomeliProductsStateRedisCache } from 'src/app/driver/cache/redis/AutomeliProductsStateRedisCache';
 import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
@@ -36,6 +38,7 @@ import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
   providers: [
     // ─── Interactor & collaborators ─────────────────────
     SyncMadreDbFromAutomeli,
+    BackfillMadreProductWeightsFromAutomeli,
     AutomeliProductsState,
     ProductStateHasher,
 
@@ -54,6 +57,10 @@ import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
       useClass: AutomeliProductsRepository
     },
     {
+      provide: 'IAutomeliProductSnapshotsRepository',
+      useClass: SQLAutomeliProductSnapshotsRepository
+    },
+    {
       provide: 'IAutomeliProductsStateCache',
       useClass: AutomeliProductsStateRedisCache
     },
@@ -63,7 +70,8 @@ import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
     }
   ],
   exports: [
-    SyncMadreDbFromAutomeli // ⬅️ CLAVE
+    SyncMadreDbFromAutomeli,
+    BackfillMadreProductWeightsFromAutomeli
   ]
 })
 export class AutomeliSyncWorkerModule {}

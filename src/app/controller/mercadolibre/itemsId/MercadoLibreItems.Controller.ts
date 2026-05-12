@@ -98,4 +98,51 @@ Devuelve items_id almacenados usando cursor pagination.
       { sellerId, status }
     );
   }
+
+  @Get('/today')
+  @ApiOperation({
+    summary: 'Obtiene items_id cargados el día actual',
+    description: `
+Devuelve los item_id almacenados hoy según la fecha actual del servidor / base.
+
+📌 Cómo funciona:
+- Filtra por DATE(created_at) = CURDATE()
+- Usa cursor pagination con lastId
+- Permite filtrar además por sellerId y status
+    `
+  })
+  @ApiQuery({ name: 'limit', example: 50 })
+  @ApiQuery({
+    name: 'lastId',
+    required: false,
+    example: 1000,
+    description: 'Último id recibido en la página anterior'
+  })
+  @ApiQuery({ name: 'sellerId', required: false })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        items: ['MLA2600984238', 'MLA2600984240'],
+        limit: 50,
+        count: 2,
+        lastId: 1050,
+        hasNext: true
+      }
+    }
+  })
+  async getTodayItems(
+    @Query('limit') limit = '50',
+    @Query('lastId') lastId?: string,
+    @Query('sellerId') sellerId?: string,
+    @Query('status') status?: string
+  ): Promise<CursorPaginatedResult<string>> {
+    return this.itemsService.getTodayItemsPaginated(
+      {
+        limit: Number(limit),
+        lastId: lastId ? Number(lastId) : undefined
+      },
+      { sellerId, status }
+    );
+  }
 }
