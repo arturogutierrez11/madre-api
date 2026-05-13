@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class GetAutomeliProductSnapshotsBySkusDto {
   @ApiProperty({
@@ -9,4 +9,20 @@ export class GetAutomeliProductSnapshotsBySkusDto {
   @IsArray()
   @IsString({ each: true })
   skus!: string[];
+
+  @ApiPropertyOptional({
+    example: ['sku', 'totalPrice', 'maxWeight'],
+    type: [String]
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fields?: string[];
+
+  @ApiPropertyOptional({
+    example: true
+  })
+  @IsOptional()
+  @IsBoolean()
+  uniqueBySku?: boolean;
 }

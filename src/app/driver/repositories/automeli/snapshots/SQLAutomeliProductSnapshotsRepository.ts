@@ -63,8 +63,16 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
           created_at,
           updated_at
         FROM automeli_product_snapshots
-        WHERE UPPER(TRIM(sku)) IN (${placeholders})
-        ORDER BY sku ASC, mla ASC
+        WHERE sku IN (${placeholders})
+        ORDER BY
+          sku ASC,
+          CASE
+            WHEN listing_type_id = 'gold_special' THEN 0
+            WHEN listing_type_id = 'gold_pro' THEN 1
+            ELSE 2
+          END ASC,
+          updated_at DESC,
+          mla ASC
       `,
       normalizedSkus
     );
