@@ -89,7 +89,9 @@ export class BackfillMadreProductWeightsFromAutomeli {
         const updates: ProductWeightUpdateData[] = [];
 
         for (const product of products) {
-          const normalizedSku = String(product.sku ?? '').trim().toUpperCase();
+          const normalizedSku = String(product.sku ?? '')
+            .trim()
+            .toUpperCase();
           if (!normalizedSku || !missingSkus.has(normalizedSku)) {
             continue;
           }
@@ -147,17 +149,14 @@ export class BackfillMadreProductWeightsFromAutomeli {
       try {
         const response = await this.automeliRepository.getLoadedProducts({
           sellerId: this.sellerId,
-          appStatus: 1,
+          appStatus: 2,
           cursor
         });
 
         return { ok: true, response };
       } catch (error) {
         const message = error?.message ?? error;
-        console.error(
-          `[WeightBackfill] Error trayendo productos (attempt ${attempt}/${FETCH_RETRIES}):`,
-          message
-        );
+        console.error(`[WeightBackfill] Error trayendo productos (attempt ${attempt}/${FETCH_RETRIES}):`, message);
 
         if (attempt < FETCH_RETRIES) {
           const delayMs = FETCH_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);

@@ -78,7 +78,9 @@ export class SyncMadreDbFromAutomeli {
 
       while (hasMore) {
         stats.requests++;
-        console.log(`[AutomeliSync] Fetching page ${stats.requests}${cursor ? ` (cursor: ${cursor.substring(0, 20)}...)` : ' (initial)'}`);
+        console.log(
+          `[AutomeliSync] Fetching page ${stats.requests}${cursor ? ` (cursor: ${cursor.substring(0, 20)}...)` : ' (initial)'}`
+        );
 
         const fetchResult = await this.fetchProducts(cursor);
 
@@ -147,17 +149,14 @@ export class SyncMadreDbFromAutomeli {
       try {
         const response = await this.automeliRepository.getLoadedProducts({
           sellerId: this.sellerId,
-          appStatus: 1,
+          appStatus: 2,
           cursor
         });
 
         return { ok: true, response };
       } catch (error) {
         const message = error?.message ?? error;
-        console.error(
-          `[AutomeliSync] Failed to fetch products (attempt ${attempt}/${FETCH_RETRIES}):`,
-          message
-        );
+        console.error(`[AutomeliSync] Failed to fetch products (attempt ${attempt}/${FETCH_RETRIES}):`, message);
 
         if (attempt < FETCH_RETRIES) {
           const delayMs = FETCH_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
@@ -194,10 +193,7 @@ export class SyncMadreDbFromAutomeli {
   }
 
   private mapStatus(product: AutomeliProduct): 'active' | 'inactive' {
-    const isActive =
-      product.appStatus === 1 &&
-      product.amzStatus === 'Disponible' &&
-      product.stockQuantity > 0;
+    const isActive = product.appStatus === 1 && product.amzStatus === 'Disponible' && product.stockQuantity > 0;
     return isActive ? 'active' : 'inactive';
   }
 
