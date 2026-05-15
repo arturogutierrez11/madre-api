@@ -407,6 +407,56 @@ export class MarketplaceProductsBulkController {
     };
   }
 
+  @Get('items/ids-and-skus')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Listar id y sellerSku por marketplace en sync_items',
+    description: 'Devuelve solo id y sellerSku paginados para un marketplace determinado.'
+  })
+  @ApiQuery({
+    name: 'marketplace',
+    example: 'fravega',
+    required: true
+  })
+  @ApiQuery({
+    name: 'limit',
+    example: 100,
+    required: false
+  })
+  @ApiQuery({
+    name: 'offset',
+    example: 0,
+    required: false
+  })
+  async listItemIdsAndSkus(
+    @Query('marketplace') marketplace: string,
+    @Query('limit') limit = '100',
+    @Query('offset') offset = '0'
+  ) {
+    if (!marketplace) {
+      throw new BadRequestException('marketplace query param is required');
+    }
+
+    const parsedLimit = Math.min(Number(limit) || 100, 500);
+    const parsedOffset = Number(offset) || 0;
+
+    const [items, total] = await Promise.all([
+      this.productSyncRepository.listSyncItemIdsAndSkus(marketplace, parsedLimit, parsedOffset),
+      this.productSyncRepository.countSyncItems(marketplace)
+    ]);
+
+    return {
+      marketplace,
+      items,
+      limit: parsedLimit,
+      offset: parsedOffset,
+      count: items.length,
+      total,
+      hasNext: parsedOffset + parsedLimit < total,
+      nextOffset: parsedOffset + parsedLimit < total ? parsedOffset + parsedLimit : null
+    };
+  }
+
   @Get(':marketplace/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

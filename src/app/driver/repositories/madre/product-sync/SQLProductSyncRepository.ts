@@ -289,6 +289,33 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
       .filter((sku: string | null) => typeof sku === 'string' && sku.trim().length > 0);
   }
 
+  async listSyncItemIdsAndSkus(
+    marketplace: string,
+    limit: number,
+    offset: number
+  ): Promise<{ id: string; sellerSku: string }[]> {
+    const safeLimit = Number(limit);
+    const safeOffset = Number(offset);
+
+    const rows = await this.entityManager.query(
+      `
+    SELECT
+      id,
+      seller_sku
+    FROM product_sync_items
+    WHERE marketplace = ?
+    ORDER BY seller_sku ASC
+    LIMIT ${safeLimit} OFFSET ${safeOffset}
+    `,
+      [marketplace]
+    );
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      sellerSku: row.seller_sku
+    }));
+  }
+
   async countSyncItems(marketplace: string): Promise<number> {
     const rows = await this.entityManager.query(
       `

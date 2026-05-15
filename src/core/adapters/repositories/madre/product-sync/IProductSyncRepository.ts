@@ -8,6 +8,7 @@ export interface IProductSyncRepository {
   listMarketplaceSnapshotsBySellerSku(limit: number, offset: number): Promise<any[]>;
   countDistinctSellerSkus(): Promise<number>;
   listSyncItemSkus(marketplace: string, limit: number, offset: number): Promise<string[]>;
+  listSyncItemIdsAndSkus(marketplace: string, limit: number, offset: number): Promise<{ id: string; sellerSku: string }[]>;
   listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]>;
   countSyncItems(marketplace: string): Promise<number>;
   findHistoryByProductSyncItemId(productSyncItemId: string): Promise<any[]>;
