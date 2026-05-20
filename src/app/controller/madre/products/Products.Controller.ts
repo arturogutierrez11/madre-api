@@ -22,6 +22,20 @@ export class ProductsController {
     return this.productService.getStatusSnapshotsBySkus(body.skus);
   }
 
+  @Post('madre/images/bulk')
+  @ApiOperation({
+    summary: 'Consultar en bulk solo imágenes por SKU',
+    description: 'Devuelve un listado simple con sku e images para los SKUs enviados.'
+  })
+  @ApiBody({ type: BulkProductSnapshotDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Imágenes de productos por SKU'
+  })
+  async getBulkImageSnapshots(@Body() body: BulkProductSnapshotDto) {
+    return this.productService.getImageSnapshotsBySkus(body.skus);
+  }
+
   @Get('madre')
   @ApiOperation({
     summary: 'Listar uno o muchos productos madre',

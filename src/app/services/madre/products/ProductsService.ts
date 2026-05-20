@@ -41,4 +41,26 @@ export class ProductsService {
       total: items.length
     };
   }
+
+  async getImageSnapshotsBySkus(skus: string[]) {
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    if (!normalizedSkus.length) {
+      return {
+        items: [],
+        total: 0
+      };
+    }
+
+    const items = await this.productRepository.findImageSnapshotsBySkus(normalizedSkus);
+
+    return {
+      items,
+      total: items.length
+    };
+  }
 }

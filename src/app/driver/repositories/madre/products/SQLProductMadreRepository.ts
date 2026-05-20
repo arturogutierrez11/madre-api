@@ -7,6 +7,7 @@ import {
   AutomeliBulkUpdateData,
   MeliProductImportData,
   IProductsRepository,
+  ProductImagesSnapshot,
   ProductStatusSnapshot,
   ProductWeightUpdateData
 } from 'src/core/adapters/repositories/madre/products/IProductsRepository';
@@ -168,6 +169,55 @@ export class SQLProductMadreRepository implements IProductsRepository {
       maxWeight: null,
       stock: 0,
       status: null
+    });
+  }
+
+  async findImageSnapshotsBySkus(skus: string[]): Promise<ProductImagesSnapshot[]> {
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
+
+    if (!normalizedSkus.length) {
+      return [];
+    }
+
+    const placeholders = normalizedSkus.map(() => '?').join(', ');
+
+    const rows = await this.productosMadreEntityManager.query(
+      `
+        SELECT
+          sku,
+          imagen_1,
+          imagen_2,
+          imagen_3,
+          imagen_4,
+          imagen_5,
+          imagen_6,
+          imagen_7,
+          imagen_8,
+          imagen_9,
+          imagen_10
+        FROM productos_madre
+        WHERE sku IN (${placeholders})
+      `,
+      normalizedSkus
+    );
+
+    const rowMap = new Map<string, ProductImagesSnapshot>(
+      rows.map((row: any) => [
+        String(row.sku).trim().toUpperCase(),
+        {
+          sku: String(row.sku).trim().toUpperCase(),
+          images: this.parseImages(row)
+        }
+      ])
+    );
+
+    return normalizedSkus.map(sku => rowMap.get(sku) ?? {
+      sku,
+      images: []
     });
   }
 

@@ -36,6 +36,11 @@ export interface ProductStatusSnapshot {
   status: string | null;
 }
 
+export interface ProductImagesSnapshot {
+  sku: string;
+  images: { position: number; url: string }[];
+}
+
 export interface ProductWeightUpdateData {
   sku: string;
   maxWeight: number;
@@ -50,6 +55,8 @@ export interface IProductsRepository {
   ): Promise<PaginatedResult<ProductMadre>>;
 
   findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]>;
+
+  findImageSnapshotsBySkus(skus: string[]): Promise<ProductImagesSnapshot[]>;
 
   findSkusWithoutMaxWeight(): Promise<string[]>;
 
