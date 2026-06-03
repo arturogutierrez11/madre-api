@@ -25,6 +25,7 @@ import { ProductDeltaModule } from './module/product-delta/ProductDelta.Module';
 import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-mlas/PromotionCampaignMlas.Module';
 import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 import { AutomeliProductSnapshotsModule } from './module/automeli/snapshots/AutomeliProductSnapshots.Module';
+import { PlanillaControlModule } from './module/planilladecontrol/PlanillaControl.Module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AutomeliProductSnapshotsModule } from './module/automeli/snapshots/Auto
     PromotionCampaignMlasModule,
     TaxesCategoriesModule,
     AutomeliProductSnapshotsModule,
+    PlanillaControlModule,
 
     MeliProductsImportWorkerModule,
 
