@@ -9,11 +9,19 @@ export interface IProductSyncRepository {
   countDistinctSellerSkus(): Promise<number>;
   listSyncItemSkus(marketplace: string, limit: number, offset: number): Promise<string[]>;
   listSyncItemIdsAndSkus(marketplace: string, limit: number, offset: number): Promise<{ id: string; sellerSku: string }[]>;
-  listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]>;
-  countSyncItems(marketplace: string): Promise<number>;
+  listSyncItems(
+    marketplace: string,
+    limit: number,
+    offset: number,
+    filters?: { sku?: string; status?: string }
+  ): Promise<any[]>;
+  countSyncItems(marketplace: string, filters?: { sku?: string; status?: string }): Promise<number>;
   findHistoryByProductSyncItemId(productSyncItemId: string): Promise<any[]>;
   findHistoryByStatus(productSyncItemId: string, status: string): Promise<any[]>;
   findHistoryBySellerSku(marketplace: string, sellerSku: string): Promise<any[]>;
   findHistoryBySellerSkuAndStatus(marketplace: string, sellerSku: string, status: string): Promise<any[]>;
-  countSyncItemsByStatus(marketplace: string): Promise<{ status: string; total: number }[]>;
+  countSyncItemsByStatus(
+    marketplace: string,
+    filters?: { sku?: string; status?: string }
+  ): Promise<{ status: string; total: number }[]>;
 }

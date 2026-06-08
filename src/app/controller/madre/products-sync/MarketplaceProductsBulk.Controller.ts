@@ -327,10 +327,24 @@ export class MarketplaceProductsBulkController {
     example: 0,
     required: false
   })
+  @ApiQuery({
+    name: 'sku',
+    example: 'B0C33CHG99',
+    required: false,
+    description: 'Filtra por coincidencia parcial sobre seller_sku'
+  })
+  @ApiQuery({
+    name: 'status',
+    example: 'ACTIVE',
+    required: false,
+    description: 'Filtra por estado exacto, por ejemplo ACTIVE, PAUSED o ERROR'
+  })
   async listItems(
     @Query('marketplace') marketplace: string,
     @Query('limit') limit = '100',
-    @Query('offset') offset = '0'
+    @Query('offset') offset = '0',
+    @Query('sku') sku?: string,
+    @Query('status') status?: string
   ) {
     if (!marketplace) {
       throw new BadRequestException('marketplace query param is required');
@@ -340,12 +354,17 @@ export class MarketplaceProductsBulkController {
     const parsedOffset = Number(offset) || 0;
 
     const [items, total, statusRows] = await Promise.all([
-      this.productSyncRepository.listSyncItems(marketplace, parsedLimit, parsedOffset),
-      this.productSyncRepository.countSyncItems(marketplace),
-      this.productSyncRepository.countSyncItemsByStatus(marketplace)
+      this.productSyncRepository.listSyncItems(marketplace, parsedLimit, parsedOffset, { sku, status }),
+      this.productSyncRepository.countSyncItems(marketplace, { sku, status }),
+      this.productSyncRepository.countSyncItemsByStatus(marketplace, { sku, status })
     ]);
 
     return {
+      marketplace,
+      filters: {
+        sku: sku?.trim() || null,
+        status: status?.trim() || null
+      },
       items,
       limit: parsedLimit,
       offset: parsedOffset,
