@@ -245,9 +245,26 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     );
   }
 
-  async listSyncItems(marketplace: string, limit: number, offset: number): Promise<any[]> {
+  async listSyncItems(
+    marketplace: string,
+    limit: number,
+    offset: number,
+    filters?: { sku?: string; status?: string }
+  ): Promise<any[]> {
     const safeLimit = Number(limit);
     const safeOffset = Number(offset);
+    const where: string[] = ['marketplace = ?'];
+    const values: any[] = [marketplace];
+
+    if (filters?.sku?.trim()) {
+      where.push('seller_sku LIKE ?');
+      values.push(`%${filters.sku.trim()}%`);
+    }
+
+    if (filters?.status?.trim()) {
+      where.push('LOWER(status) = ?');
+      values.push(filters.status.trim().toLowerCase());
+    }
 
     return this.entityManager.query(
       `
@@ -261,11 +278,11 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
       last_seen_at,
       raw_payload
     FROM product_sync_items
-    WHERE marketplace = ?
+    WHERE ${where.join(' AND ')}
     ORDER BY seller_sku
     LIMIT ${safeLimit} OFFSET ${safeOffset}
     `,
-      [marketplace]
+      values
     );
   }
 
@@ -316,31 +333,60 @@ export class SQLProductSyncRepository implements IProductSyncRepository {
     }));
   }
 
-  async countSyncItems(marketplace: string): Promise<number> {
+  async countSyncItems(marketplace: string, filters?: { sku?: string; status?: string }): Promise<number> {
+    const where: string[] = ['marketplace = ?'];
+    const values: any[] = [marketplace];
+
+    if (filters?.sku?.trim()) {
+      where.push('seller_sku LIKE ?');
+      values.push(`%${filters.sku.trim()}%`);
+    }
+
+    if (filters?.status?.trim()) {
+      where.push('LOWER(status) = ?');
+      values.push(filters.status.trim().toLowerCase());
+    }
+
     const rows = await this.entityManager.query(
       `
     SELECT COUNT(*) AS total
     FROM product_sync_items
-    WHERE marketplace = ?
+    WHERE ${where.join(' AND ')}
     `,
-      [marketplace]
+      values
     );
 
     return Number(rows[0]?.total ?? 0);
   }
 
-  async countSyncItemsByStatus(marketplace: string): Promise<{ status: string; total: number }[]> {
+  async countSyncItemsByStatus(
+    marketplace: string,
+    filters?: { sku?: string; status?: string }
+  ): Promise<{ status: string; total: number }[]> {
+    const where: string[] = ['marketplace = ?'];
+    const values: any[] = [marketplace];
+
+    if (filters?.sku?.trim()) {
+      where.push('seller_sku LIKE ?');
+      values.push(`%${filters.sku.trim()}%`);
+    }
+
+    if (filters?.status?.trim()) {
+      where.push('LOWER(status) = ?');
+      values.push(filters.status.trim().toLowerCase());
+    }
+
     const rows = await this.entityManager.query(
       `
     SELECT
       status,
       COUNT(*) AS total
     FROM product_sync_items
-    WHERE marketplace = ?
+    WHERE ${where.join(' AND ')}
     GROUP BY status
     ORDER BY total DESC, status ASC
     `,
-      [marketplace]
+      values
     );
 
     return rows.map((row: any) => ({
