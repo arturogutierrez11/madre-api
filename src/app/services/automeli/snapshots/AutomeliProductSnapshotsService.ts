@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  AutomeliProductSnapshotsListParams,
   AutomeliProductSnapshotRecord,
   IAutomeliProductSnapshotsRepository
 } from 'src/core/adapters/repositories/automeli/snapshots/IAutomeliProductSnapshotsRepository';
@@ -43,6 +44,14 @@ export class AutomeliProductSnapshotsService {
       items: projectedItems,
       total: projectedItems.length
     };
+  }
+
+  async findAll(params: AutomeliProductSnapshotsListParams) {
+    return this.snapshotsRepository.findAll({
+      ...params,
+      limit: Math.min(Math.max(Number(params.limit) || 50, 1), 500),
+      offset: Math.max(Number(params.offset) || 0, 0)
+    });
   }
 
   private uniqueBySku(items: AutomeliProductSnapshotRecord[]) {
