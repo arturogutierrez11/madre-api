@@ -18,8 +18,50 @@ export interface AutomeliProductSnapshotRecord {
   updatedAt: string | null;
 }
 
+export interface AutomeliProductSnapshotsListParams {
+  limit: number;
+  offset: number;
+  mla?: string;
+  sku?: string;
+  totalPrice?: number;
+  totalPriceMin?: number;
+  totalPriceMax?: number;
+  scrapedPrice?: number;
+  scrapedPriceMin?: number;
+  scrapedPriceMax?: number;
+  stockQuantity?: number;
+  stockQuantityMin?: number;
+  stockQuantityMax?: number;
+  amzStatus?: string;
+  changed?: string;
+  maxWeight?: number;
+  maxWeightMin?: number;
+  maxWeightMax?: number;
+  meliSalePrice?: number;
+  meliSalePriceMin?: number;
+  meliSalePriceMax?: number;
+  meliStatus?: string;
+  listingTypeId?: string;
+  subStatus?: string;
+  appStatus?: number;
+  createdAtFrom?: string;
+  createdAtTo?: string;
+  updatedAtFrom?: string;
+  updatedAtTo?: string;
+}
+
 export interface IAutomeliProductSnapshotsRepository {
   upsertBulk(products: AutomeliProduct[]): Promise<number>;
 
   findBySkus(skus: string[]): Promise<AutomeliProductSnapshotRecord[]>;
+
+  findAll(params: AutomeliProductSnapshotsListParams): Promise<{
+    items: AutomeliProductSnapshotRecord[];
+    total: number;
+    limit: number;
+    offset: number;
+    count: number;
+    hasNext: boolean;
+    nextOffset: number | null;
+  }>;
 }
