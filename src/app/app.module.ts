@@ -26,6 +26,7 @@ import { PromotionCampaignMlasModule } from './module/madre/promotion-campaign-m
 import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 import { AutomeliProductSnapshotsModule } from './module/automeli/snapshots/AutomeliProductSnapshots.Module';
 import { PlanillaControlModule } from './module/planilladecontrol/PlanillaControl.Module';
+import { OrdersModule } from './module/madre/orders/Orders.Module';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { PlanillaControlModule } from './module/planilladecontrol/PlanillaContro
     // PUBLCIADOR:
     // modulo de la tabla de publication_run
     PublicationRunsModule,
-    PublicationJobsModule
+    PublicationJobsModule,
+    OrdersModule
   ]
 })
 export class AppModule {}
