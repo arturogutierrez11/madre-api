@@ -9,6 +9,23 @@ import { ListAutomeliProductSnapshotsDto } from './dto/ListAutomeliProductSnapsh
 export class AutomeliProductSnapshotsController {
   constructor(private readonly snapshotsService: AutomeliProductSnapshotsService) {}
 
+  @Get('/last-updated')
+  @ApiOperation({
+    summary: 'Devuelve la última fecha de actualización de snapshots de Automeli'
+  })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        total: 726338,
+        lastCreatedAt: '2026-05-12T22:47:07.000Z',
+        lastUpdatedAt: '2026-06-17T18:00:05.000Z'
+      }
+    }
+  })
+  async getLastUpdated() {
+    return this.snapshotsService.getLastUpdateInfo();
+  }
+
   @Get('/all')
   @ApiOperation({
     summary: 'Lista paginada de snapshots de Automeli con filtros',

@@ -55,6 +55,12 @@ export interface IAutomeliProductSnapshotsRepository {
 
   findBySkus(skus: string[]): Promise<AutomeliProductSnapshotRecord[]>;
 
+  getLastUpdateInfo(): Promise<{
+    total: number;
+    lastCreatedAt: string | null;
+    lastUpdatedAt: string | null;
+  }>;
+
   findAll(params: AutomeliProductSnapshotsListParams): Promise<{
     items: AutomeliProductSnapshotRecord[];
     total: number;

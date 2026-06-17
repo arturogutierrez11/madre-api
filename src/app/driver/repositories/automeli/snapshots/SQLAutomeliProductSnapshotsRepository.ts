@@ -84,6 +84,30 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
     }));
   }
 
+  async getLastUpdateInfo(): Promise<{
+    total: number;
+    lastCreatedAt: string | null;
+    lastUpdatedAt: string | null;
+  }> {
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          COUNT(*) AS total,
+          MAX(created_at) AS last_created_at,
+          MAX(updated_at) AS last_updated_at
+        FROM automeli_product_snapshots
+      `
+    );
+
+    const row = rows[0] ?? {};
+
+    return {
+      total: Number(row.total ?? 0),
+      lastCreatedAt: row.last_created_at ? new Date(row.last_created_at).toISOString() : null,
+      lastUpdatedAt: row.last_updated_at ? new Date(row.last_updated_at).toISOString() : null
+    };
+  }
+
   async findAll(params: AutomeliProductSnapshotsListParams) {
     const safeLimit = Number(params.limit);
     const safeOffset = Number(params.offset);

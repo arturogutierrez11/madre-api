@@ -54,6 +54,10 @@ export class AutomeliProductSnapshotsService {
     });
   }
 
+  async getLastUpdateInfo() {
+    return this.snapshotsRepository.getLastUpdateInfo();
+  }
+
   private uniqueBySku(items: AutomeliProductSnapshotRecord[]) {
     const map = new Map<string, AutomeliProductSnapshotRecord>();
 
