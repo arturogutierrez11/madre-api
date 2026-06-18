@@ -45,4 +45,17 @@ export class ProductDeltaService {
 
     return { sync_key: syncKey, last_delta_id: updated };
   }
+
+  async getRecentChangesSummary(minutes: number) {
+    const safeMinutes = Math.max(1, Math.min(7 * 24 * 60, Math.trunc(Number(minutes) || 360)));
+    return this.productDeltaRepository.getRecentChangesSummary(safeMinutes);
+  }
+
+  async getRecentlyUpdatedProducts(minutes: number, limit: number, offset: number) {
+    const safeMinutes = Math.max(1, Math.min(7 * 24 * 60, Math.trunc(Number(minutes) || 360)));
+    const safeLimit = Math.min(5000, Math.max(1, Math.trunc(Number(limit) || 100)));
+    const safeOffset = Math.max(0, Math.trunc(Number(offset) || 0));
+
+    return this.productDeltaRepository.getRecentlyUpdatedProducts(safeMinutes, safeLimit, safeOffset);
+  }
 }

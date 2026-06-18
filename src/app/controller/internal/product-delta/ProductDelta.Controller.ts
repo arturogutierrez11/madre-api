@@ -72,4 +72,54 @@ export class ProductDeltaController {
   async updateCursor(@Body() body: UpdateCursorDto) {
     return this.productDeltaService.updateCursor(body.sync_key, body.last_delta_id);
   }
+
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Resume cuántos cambios y cuántos productos se actualizaron recientemente'
+  })
+  @ApiQuery({
+    name: 'minutes',
+    required: false,
+    type: Number,
+    example: 360,
+    description: 'Ventana de tiempo en minutos para medir cambios recientes'
+  })
+  @ApiResponse({ status: 200, description: 'Resumen de cambios recientes' })
+  async getSummary(@Query('minutes') minutes = '360') {
+    return this.productDeltaService.getRecentChangesSummary(Number(minutes));
+  }
+
+  @Get('products')
+  @ApiOperation({
+    summary: 'Lista los productos que tuvieron cambios recientes en productos_madre_delta'
+  })
+  @ApiQuery({
+    name: 'minutes',
+    required: false,
+    type: Number,
+    example: 360,
+    description: 'Ventana de tiempo en minutos para buscar productos actualizados'
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 100,
+    description: 'Cantidad máxima de productos'
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    example: 0,
+    description: 'Offset de paginación'
+  })
+  @ApiResponse({ status: 200, description: 'Productos actualizados recientemente' })
+  async getRecentlyUpdatedProducts(
+    @Query('minutes') minutes = '360',
+    @Query('limit') limit = '100',
+    @Query('offset') offset = '0'
+  ) {
+    return this.productDeltaService.getRecentlyUpdatedProducts(Number(minutes), Number(limit), Number(offset));
+  }
 }
