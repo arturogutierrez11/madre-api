@@ -136,6 +136,11 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
 
     this.pushStringLikeFilter(where, values, 'mla', params.mla);
     this.pushStringLikeFilter(where, values, 'sku', params.sku);
+    this.pushStringLikeFilter(where, values, 'brand', params.brand);
+    this.pushStringLikeFilter(where, values, 'title', params.title);
+    this.pushStringLikeFilter(where, values, 'manufacturing_time', params.manufacturingTime);
+    this.pushStringLikeFilter(where, values, 'pause_reason', params.pauseReason);
+    this.pushDateRangeFilter(where, values, 'paused_since', params.pausedSinceFrom, params.pausedSinceTo);
     this.pushNumberFilter(where, values, 'total_price', params.totalPrice, params.totalPriceMin, params.totalPriceMax);
     this.pushNumberFilter(
       where,
@@ -145,6 +150,15 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
       params.scrapedPriceMin,
       params.scrapedPriceMax
     );
+    this.pushNumberFilter(
+      where,
+      values,
+      'shipping_cost',
+      params.shippingCost,
+      params.shippingCostMin,
+      params.shippingCostMax
+    );
+    this.pushNumberFilter(where, values, 'taxes', params.taxes, params.taxesMin, params.taxesMax);
     this.pushNumberFilter(
       where,
       values,
@@ -164,6 +178,14 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
       params.meliSalePriceMin,
       params.meliSalePriceMax
     );
+    this.pushNumberFilter(
+      where,
+      values,
+      'discount_total_price',
+      params.discountTotalPrice,
+      params.discountTotalPriceMin,
+      params.discountTotalPriceMax
+    );
     this.pushStringLikeFilter(where, values, 'meli_status', params.meliStatus);
     this.pushStringLikeFilter(where, values, 'listing_type_id', params.listingTypeId);
     this.pushStringLikeFilter(where, values, 'sub_status', params.subStatus);
@@ -172,6 +194,39 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
       where.push('app_status = ?');
       values.push(Number(params.appStatus));
     }
+
+    this.pushStringLikeFilter(where, values, 'id_meli_main_variant', params.idMeliMainVariant);
+    this.pushStringLikeFilter(where, values, 'image', params.image);
+
+    if (params.imageChanged != null && !Number.isNaN(Number(params.imageChanged))) {
+      where.push('image_changed = ?');
+      values.push(Number(params.imageChanged));
+    }
+
+    this.pushStringLikeFilter(where, values, 'image_changed_url', params.imageChangedUrl);
+    this.pushStringLikeFilter(where, values, 'permalink', params.permalink);
+    this.pushStringLikeFilter(where, values, 'meli_category_name', params.meliCategoryName);
+    this.pushStringLikeFilter(where, values, 'meli_main_category', params.meliMainCategory);
+    this.pushStringLikeFilter(where, values, 'shipping_from', params.shippingFrom);
+
+    if (params.taxCategoryId != null && !Number.isNaN(Number(params.taxCategoryId))) {
+      where.push('tax_category_id = ?');
+      values.push(Number(params.taxCategoryId));
+    }
+
+    if (params.createUsingPublisher != null && !Number.isNaN(Number(params.createUsingPublisher))) {
+      where.push('create_using_publisher = ?');
+      values.push(Number(params.createUsingPublisher));
+    }
+
+    this.pushDateRangeFilter(where, values, 'date_updated', params.dateUpdatedFrom, params.dateUpdatedTo);
+    this.pushDateRangeFilter(
+      where,
+      values,
+      'date_updated_meli',
+      params.dateUpdatedMeliFrom,
+      params.dateUpdatedMeliTo
+    );
 
     this.pushDateRangeFilter(where, values, 'created_at', params.createdAtFrom, params.createdAtTo);
     this.pushDateRangeFilter(where, values, 'updated_at', params.updatedAtFrom, params.updatedAtTo);
