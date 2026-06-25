@@ -10,6 +10,7 @@ export function mapAutomeliProduct(item: any): AutomeliProduct {
     meliStatus: item.meli_status,
     subStatus: item.sub_status || null,
     pauseReason: item.pause_reason || null,
+    pausedSince: item.paused_since ? new Date(item.paused_since) : null,
     amzStatus: item.amz_status || null,
     changed: item.changed || null,
 

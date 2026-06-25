@@ -3,17 +3,37 @@ import { AutomeliProduct } from 'src/core/entities/automeli/products/AutomeliPro
 export interface AutomeliProductSnapshotRecord {
   mla: string;
   sku: string;
+  brand: string | null;
+  title: string | null;
+  manufacturingTime: string | null;
+  pauseReason: string | null;
+  pausedSince: string | null;
   totalPrice: number | null;
   scrapedPrice: number | null;
+  shippingCost: number | null;
+  taxes: number | null;
   stockQuantity: number | null;
   amzStatus: string | null;
   changed: string | null;
   maxWeight: number | null;
   meliSalePrice: number | null;
+  discountTotalPrice: number | null;
   meliStatus: string | null;
   listingTypeId: string | null;
   subStatus: string | null;
   appStatus: number | null;
+  idMeliMainVariant: string | null;
+  image: string | null;
+  imageChanged: number | null;
+  imageChangedUrl: string | null;
+  permalink: string | null;
+  meliCategoryName: string | null;
+  meliMainCategory: string | null;
+  shippingFrom: string | null;
+  taxCategoryId: number | null;
+  createUsingPublisher: number | null;
+  dateUpdated: string | null;
+  dateUpdatedMeli: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
