@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 import { InvoiceClientIssuesService } from 'src/app/services/invoice/client-issues/InvoiceClientIssuesService';
+import { ListInvoiceClientIssueClientsDto } from './dto/ListInvoiceClientIssueClients.dto';
 import { ListInvoiceClientIssuesDto } from './dto/ListInvoiceClientIssues.dto';
 import { UpdateInvoiceClientIssueDto } from './dto/UpdateInvoiceClientIssue.dto';
 import { UpsertInvoiceClientIssueDto } from './dto/UpsertInvoiceClientIssue.dto';
@@ -49,6 +50,18 @@ export class InvoiceClientIssuesController {
   @ApiQuery({ name: 'offset', required: false, example: 0 })
   async list(@Query() query: ListInvoiceClientIssuesDto) {
     return this.service.listIssues(query);
+  }
+
+  @Get('clients')
+  @ApiOperation({ summary: 'Listar clientes guardados en invoice_client_issues' })
+  @ApiQuery({ name: 'tlqvCode', required: false, example: 'TLQV-14921' })
+  @ApiQuery({ name: 'buyerName', required: false, example: 'ARTURO GUTIERREZ' })
+  @ApiQuery({ name: 'email', required: false, example: 'mail@test.com' })
+  @ApiQuery({ name: 'documentoNroDigits', required: false, example: '20111111114' })
+  @ApiQuery({ name: 'limit', required: false, example: 100 })
+  @ApiQuery({ name: 'offset', required: false, example: 0 })
+  async listClients(@Query() query: ListInvoiceClientIssueClientsDto) {
+    return this.service.listClients(query);
   }
 
   @Get('by-tlqv-code/:tlqvCode')

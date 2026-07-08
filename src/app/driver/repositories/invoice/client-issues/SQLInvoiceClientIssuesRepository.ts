@@ -3,6 +3,8 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import {
   ISQLInvoiceClientIssuesRepository,
+  InvoiceClientIssueClientRecord,
+  InvoiceClientIssuesListClientsFilters,
   InvoiceClientIssuesListFilters,
   InvoiceClientIssuesListResult,
   InvoiceClientIssueRecord,
@@ -182,6 +184,76 @@ export class SQLInvoiceClientIssuesRepository implements ISQLInvoiceClientIssues
     };
   }
 
+  async listClients(filters: InvoiceClientIssuesListClientsFilters): Promise<{
+    items: InvoiceClientIssueClientRecord[];
+    pagination: {
+      limit: number;
+      offset: number;
+      total: number;
+    };
+  }> {
+    const where = ['deleted_at IS NULL'];
+    const params: any[] = [];
+
+    this.pushEquals(where, params, 'tlqv_code', filters.tlqvCode);
+    this.pushLike(where, params, 'buyer_name', filters.buyerName);
+    this.pushLike(where, params, 'email', filters.email);
+    this.pushEquals(where, params, 'documento_nro_digits', filters.documentoNroDigits);
+
+    const whereClause = `WHERE ${where.join(' AND ')}`;
+    const groupBy = `
+      GROUP BY
+        buyer_name,
+        email,
+        documento_tipo,
+        documento_nro,
+        documento_nro_digits
+    `;
+
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          buyer_name,
+          email,
+          documento_tipo,
+          documento_nro,
+          documento_nro_digits,
+          MIN(first_seen_at) AS first_seen_at,
+          MAX(last_seen_at) AS last_seen_at,
+          COUNT(*) AS issue_count,
+          MAX(tlqv_code) AS tlqv_code
+        FROM defaultdb.invoice_client_issues
+        ${whereClause}
+        ${groupBy}
+        ORDER BY MAX(last_seen_at) DESC, MAX(id) DESC
+        LIMIT ? OFFSET ?
+      `,
+      [...params, filters.limit, filters.offset]
+    );
+
+    const totalRows = await this.entityManager.query(
+      `
+        SELECT COUNT(*) AS total
+        FROM (
+          SELECT 1
+          FROM defaultdb.invoice_client_issues
+          ${whereClause}
+          ${groupBy}
+        ) grouped_clients
+      `,
+      params
+    );
+
+    return {
+      items: rows.map((row: GenericRow) => this.mapClient(row)),
+      pagination: {
+        limit: filters.limit,
+        offset: filters.offset,
+        total: Number(totalRows[0]?.total ?? 0)
+      }
+    };
+  }
+
   async findById(id: number): Promise<InvoiceClientIssueRecord | null> {
     return this.findByIdWithManager(this.entityManager, id);
   }
@@ -322,6 +394,15 @@ export class SQLInvoiceClientIssuesRepository implements ISQLInvoiceClientIssues
     params.push(value);
   }
 
+  private pushLike(where: string[], params: any[], column: string, value?: string | null) {
+    if (value == null || value === '') {
+      return;
+    }
+
+    where.push(`${column} LIKE ?`);
+    params.push(`%${value}%`);
+  }
+
   private stringifyJson(value: unknown) {
     return value == null ? null : JSON.stringify(value);
   }
@@ -374,6 +455,20 @@ export class SQLInvoiceClientIssuesRepository implements ISQLInvoiceClientIssues
       createdAt: this.toIsoString(row.created_at)!,
       updatedAt: this.toIsoString(row.updated_at)!,
       deletedAt: this.toIsoString(row.deleted_at)
+    };
+  }
+
+  private mapClient(row: GenericRow): InvoiceClientIssueClientRecord {
+    return {
+      buyerName: row.buyer_name ?? null,
+      email: row.email ?? null,
+      documentoTipo: row.documento_tipo ?? null,
+      documentoNro: row.documento_nro ?? null,
+      documentoNroDigits: row.documento_nro_digits ?? null,
+      firstSeenAt: this.toIsoString(row.first_seen_at)!,
+      lastSeenAt: this.toIsoString(row.last_seen_at)!,
+      issueCount: Number(row.issue_count ?? 0),
+      tlqvCode: row.tlqv_code ?? null
     };
   }
 }

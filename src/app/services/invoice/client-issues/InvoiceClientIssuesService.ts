@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import {
   ISQLInvoiceClientIssuesRepository,
+  InvoiceClientIssuesListClientsFilters,
   InvoiceClientIssuesListFilters,
   InvoiceClientIssueUpdateInput,
   InvoiceClientIssueUpsertInput
@@ -47,6 +48,20 @@ export class InvoiceClientIssuesService {
       reason: query.reason ? this.normalizeRequiredUpper(query.reason, 'reason') : undefined,
       source: query.source ? this.normalizeRequiredLower(query.source, 'source') : undefined,
       status: query.status ? this.normalizeRequiredLower(query.status, 'status') : undefined,
+      documentoNroDigits: query.documentoNroDigits ? this.normalizeDigits(query.documentoNroDigits) ?? undefined : undefined,
+      limit: Math.min(Math.max(Number(query.limit) || 100, 1), 500),
+      offset: Math.max(Number(query.offset) || 0, 0)
+    });
+  }
+
+  listClients(query: Partial<InvoiceClientIssuesListClientsFilters>) {
+    const buyerName = this.normalizeOptional(query.buyerName);
+    const email = this.normalizeOptional(query.email);
+
+    return this.repository.listClients({
+      tlqvCode: query.tlqvCode ? this.normalizeRequiredUpper(query.tlqvCode, 'tlqvCode') : undefined,
+      buyerName: buyerName ?? undefined,
+      email: email ?? undefined,
       documentoNroDigits: query.documentoNroDigits ? this.normalizeDigits(query.documentoNroDigits) ?? undefined : undefined,
       limit: Math.min(Math.max(Number(query.limit) || 100, 1), 500),
       offset: Math.max(Number(query.offset) || 0, 0)

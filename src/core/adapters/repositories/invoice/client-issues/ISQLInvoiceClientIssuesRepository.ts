@@ -76,9 +76,38 @@ export interface InvoiceClientIssuesListResult {
   };
 }
 
+export interface InvoiceClientIssuesListClientsFilters {
+  tlqvCode?: string;
+  buyerName?: string;
+  email?: string;
+  documentoNroDigits?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface InvoiceClientIssueClientRecord {
+  buyerName: string | null;
+  email: string | null;
+  documentoTipo: string | null;
+  documentoNro: string | null;
+  documentoNroDigits: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  issueCount: number;
+  tlqvCode: string | null;
+}
+
 export interface ISQLInvoiceClientIssuesRepository {
   upsertIssue(input: InvoiceClientIssueUpsertInput): Promise<InvoiceClientIssueUpsertResult>;
   listIssues(filters: InvoiceClientIssuesListFilters): Promise<InvoiceClientIssuesListResult>;
+  listClients(filters: InvoiceClientIssuesListClientsFilters): Promise<{
+    items: InvoiceClientIssueClientRecord[];
+    pagination: {
+      limit: number;
+      offset: number;
+      total: number;
+    };
+  }>;
   findById(id: number): Promise<InvoiceClientIssueRecord | null>;
   findByTlqvCode(tlqvCode: string): Promise<InvoiceClientIssueRecord[]>;
   updateIssue(id: number, input: InvoiceClientIssueUpdateInput): Promise<InvoiceClientIssueRecord | null>;
