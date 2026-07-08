@@ -198,6 +198,11 @@ export interface XubioComprobanteRecord {
   percepcionItems: Array<Record<string, unknown>>;
 }
 
+export interface XubioComprobanteExistsByTlqvCodeRecord {
+  tlqvCode: string;
+  exists: boolean;
+}
+
 export interface ISQLXubioComprobantesRepository {
   createSyncRun(input: XubioComprobanteSyncRunInput): Promise<XubioComprobanteSyncRunRecord>;
   updateSyncRun(id: number, input: Partial<XubioComprobanteSyncRunInput>): Promise<XubioComprobanteSyncRunRecord | null>;
@@ -205,6 +210,8 @@ export interface ISQLXubioComprobantesRepository {
   upsertComprobantes(items: XubioComprobanteInput[]): Promise<UpsertXubioComprobantesResult>;
   findByTlqvCode(tlqvCode: string): Promise<XubioComprobanteRecord[]>;
   findByTlqvCodes(tlqvCodes: string[]): Promise<XubioComprobanteRecord[]>;
+  existsByTlqvCode(tlqvCode: string): Promise<XubioComprobanteExistsByTlqvCodeRecord>;
+  existsByTlqvCodes(tlqvCodes: string[]): Promise<XubioComprobanteExistsByTlqvCodeRecord[]>;
   listComprobantes(filters: {
     tlqvCode?: string;
     numeroDocumento?: string;

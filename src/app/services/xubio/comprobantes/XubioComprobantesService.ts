@@ -50,6 +50,16 @@ export class XubioComprobantesService {
     return this.repository.findByTlqvCode(normalized);
   }
 
+  existsByTlqvCode(tlqvCode: string) {
+    const normalized = String(tlqvCode ?? '').trim().toUpperCase();
+
+    if (!normalized) {
+      throw new BadRequestException('tlqvCode is required');
+    }
+
+    return this.repository.existsByTlqvCode(normalized);
+  }
+
   findByTlqvCodes(tlqvCodes: string[]) {
     const normalized = [...new Set(
       (tlqvCodes ?? []).map(code => String(code ?? '').trim().toUpperCase()).filter(Boolean)
@@ -60,6 +70,18 @@ export class XubioComprobantesService {
     }
 
     return this.repository.findByTlqvCodes(normalized);
+  }
+
+  existsByTlqvCodes(tlqvCodes: string[]) {
+    const normalized = [...new Set(
+      (tlqvCodes ?? []).map(code => String(code ?? '').trim().toUpperCase()).filter(Boolean)
+    )];
+
+    if (!normalized.length) {
+      throw new BadRequestException('tlqvCodes must not be empty');
+    }
+
+    return this.repository.existsByTlqvCodes(normalized);
   }
 
   listComprobantes(query: {
