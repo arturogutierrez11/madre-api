@@ -23,6 +23,7 @@ import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 import { XubioComprobantesService } from 'src/app/services/xubio/comprobantes/XubioComprobantesService';
 import { CreateXubioComprobanteSyncRunDto } from './dto/CreateXubioComprobanteSyncRun.dto';
 import { GetExistingXubioClientsDto } from './dto/GetExistingXubioClients.dto';
+import { GetXubioComprobantesExistsByTlqvCodesDto } from './dto/GetXubioComprobantesExistsByTlqvCodes.dto';
 import { GetXubioComprobantesByTlqvCodesDto } from './dto/GetXubioComprobantesByTlqvCodes.dto';
 import { UpdateXubioComprobanteSyncRunDto } from './dto/UpdateXubioComprobanteSyncRun.dto';
 import { UpsertXubioComprobantesBatchDto } from './dto/UpsertXubioComprobantesBatch.dto';
@@ -94,11 +95,30 @@ export class XubioComprobantesController {
     };
   }
 
+  @Get('exists-by-tlqv-code/:tlqvCode')
+  @ApiOperation({ summary: 'Saber si un TLQV ya tiene factura válida en Xubio' })
+  @ApiParam({ name: 'tlqvCode', example: 'TLQV-7734' })
+  async existsByTlqvCode(@Param('tlqvCode') tlqvCode: string) {
+    return this.service.existsByTlqvCode(tlqvCode);
+  }
+
   @Post('by-tlqv-codes')
   @ApiOperation({ summary: 'Obtener comprobantes Xubio por múltiples TLQV codes' })
   @ApiBody({ type: GetXubioComprobantesByTlqvCodesDto })
   async findByTlqvCodes(@Body() body: GetXubioComprobantesByTlqvCodesDto) {
     const items = await this.service.findByTlqvCodes(body.tlqvCodes);
+
+    return {
+      items,
+      total: items.length
+    };
+  }
+
+  @Post('exists-by-tlqv-codes')
+  @ApiOperation({ summary: 'Saber si múltiples TLQV ya tienen factura válida en Xubio' })
+  @ApiBody({ type: GetXubioComprobantesExistsByTlqvCodesDto })
+  async existsByTlqvCodes(@Body() body: GetXubioComprobantesExistsByTlqvCodesDto) {
+    const items = await this.service.existsByTlqvCodes(body.tlqvCodes);
 
     return {
       items,

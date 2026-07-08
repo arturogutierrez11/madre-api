@@ -3,6 +3,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import {
   ISQLXubioComprobantesRepository,
+  XubioComprobanteExistsByTlqvCodeRecord,
   UpsertXubioComprobantesResult,
   XubioComprobanteInput,
   XubioComprobanteRecord,
@@ -164,6 +165,61 @@ export class SQLXubioComprobantesRepository implements ISQLXubioComprobantesRepo
     );
 
     return this.hydrateComprobantes(rows);
+  }
+
+  async existsByTlqvCode(tlqvCode: string): Promise<XubioComprobanteExistsByTlqvCodeRecord> {
+    const rows = await this.entityManager.query(
+      `
+        SELECT EXISTS (
+          SELECT 1
+          FROM defaultdb.xubio_comprobantes
+          WHERE tlqv_code = ?
+            AND document_kind = 'INVOICE'
+            AND tipo_codigo = 1
+            AND cae IS NOT NULL
+            AND cae <> ''
+          LIMIT 1
+        ) AS exists_value
+      `,
+      [tlqvCode]
+    );
+
+    return {
+      tlqvCode,
+      exists: Number(rows[0]?.exists_value ?? 0) === 1
+    };
+  }
+
+  async existsByTlqvCodes(tlqvCodes: string[]): Promise<XubioComprobanteExistsByTlqvCodeRecord[]> {
+    if (!tlqvCodes.length) {
+      return [];
+    }
+
+    const placeholders = tlqvCodes.map(() => '?').join(', ');
+    const rows = await this.entityManager.query(
+      `
+        SELECT
+          tlqv_code,
+          COUNT(*) > 0 AS exists_value
+        FROM defaultdb.xubio_comprobantes
+        WHERE tlqv_code IN (${placeholders})
+          AND document_kind = 'INVOICE'
+          AND tipo_codigo = 1
+          AND cae IS NOT NULL
+          AND cae <> ''
+        GROUP BY tlqv_code
+      `,
+      tlqvCodes
+    );
+
+    const found = new Map<string, boolean>(
+      rows.map((row: GenericRow) => [String(row.tlqv_code), Number(row.exists_value ?? 0) === 1])
+    );
+
+    return tlqvCodes.map(tlqvCode => ({
+      tlqvCode,
+      exists: found.get(tlqvCode) ?? false
+    }));
   }
 
   async listComprobantes(filters: {
