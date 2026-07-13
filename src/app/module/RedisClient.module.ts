@@ -32,3 +32,4 @@ import Redis from 'ioredis';
   exports: ['REDIS_CLIENT']
 })
 export class RedisClientModule {}
+

@@ -21,17 +21,11 @@ export class ProductsService {
   }
 
   async getStatusSnapshotsBySkus(skus: string[]) {
-    const normalizedSkus = [
-      ...new Set(
-        (skus ?? [])
-          .map(sku =>
-            String(sku ?? '')
-              .trim()
-              .toUpperCase()
-          )
-          .filter(Boolean)
-      )
-    ];
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
 
     if (!normalizedSkus.length) {
       return {
@@ -49,17 +43,11 @@ export class ProductsService {
   }
 
   async getImageSnapshotsBySkus(skus: string[]) {
-    const normalizedSkus = [
-      ...new Set(
-        (skus ?? [])
-          .map(sku =>
-            String(sku ?? '')
-              .trim()
-              .toUpperCase()
-          )
-          .filter(Boolean)
-      )
-    ];
+    const normalizedSkus = [...new Set(
+      (skus ?? [])
+        .map(sku => String(sku ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )];
 
     if (!normalizedSkus.length) {
       return {

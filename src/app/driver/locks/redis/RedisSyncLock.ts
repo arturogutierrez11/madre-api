@@ -12,7 +12,13 @@ export class RedisSyncLock implements ISyncLock, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {}
 
   async acquire(): Promise<boolean> {
-    const result = await this.redis.set(SYNC_LOCK_KEY, Date.now().toString(), 'EX', LOCK_TTL_SECONDS, 'NX');
+    const result = await this.redis.set(
+      SYNC_LOCK_KEY,
+      Date.now().toString(),
+      'EX',
+      LOCK_TTL_SECONDS,
+      'NX'
+    );
     return result === 'OK';
   }
 

@@ -69,6 +69,9 @@ import { RedisSyncLock } from 'src/app/driver/locks/redis/RedisSyncLock';
       useClass: RedisSyncLock
     }
   ],
-  exports: [SyncMadreDbFromAutomeli, BackfillMadreProductWeightsFromAutomeli]
+  exports: [
+    SyncMadreDbFromAutomeli,
+    BackfillMadreProductWeightsFromAutomeli
+  ]
 })
 export class AutomeliSyncWorkerModule {}

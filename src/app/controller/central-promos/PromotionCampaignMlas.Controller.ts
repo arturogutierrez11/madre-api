@@ -1,5 +1,12 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags
+} from '@nestjs/swagger';
 import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 import { PromotionCampaignMlaService } from 'src/app/services/madre/promotion-campaign-mlas/PromotionCampaignMlaService';
 import { BulkPromotionCampaignMlaDto } from './dto/BulkPromotionCampaignMla.dto';
@@ -18,17 +25,11 @@ export class PromotionCampaignMlasController {
   })
   @ApiBody({ type: BulkPromotionCampaignMlaDto })
   async checkExistsBulk(@Body() body: BulkPromotionCampaignMlaDto) {
-    const items = [
-      ...new Set(
-        (body.mlas ?? [])
-          .map(mla =>
-            String(mla ?? '')
-              .trim()
-              .toUpperCase()
-          )
-          .filter(Boolean)
-      )
-    ].map(mla => ({
+    const items = [...new Set(
+      (body.mlas ?? [])
+        .map(mla => String(mla ?? '').trim().toUpperCase())
+        .filter(Boolean)
+    )].map(mla => ({
       mla,
       exists: true
     }));
@@ -45,7 +46,10 @@ export class PromotionCampaignMlasController {
   })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiQuery({ name: 'offset', required: false, example: 0 })
-  async list(@Query('limit') limit = '10', @Query('offset') offset = '0') {
+  async list(
+    @Query('limit') limit = '10',
+    @Query('offset') offset = '0'
+  ) {
     return this.service.list(Number(limit), Number(offset));
   }
 
@@ -72,17 +76,7 @@ export class PromotionCampaignMlasController {
 
     return {
       status: 'ok',
-      totalReceived: [
-        ...new Set(
-          (body.mlas ?? [])
-            .map(mla =>
-              String(mla ?? '')
-                .trim()
-                .toUpperCase()
-            )
-            .filter(Boolean)
-        )
-      ].length,
+      totalReceived: [...new Set((body.mlas ?? []).map(mla => String(mla ?? '').trim().toUpperCase()).filter(Boolean))].length,
       affectedRows: affected
     };
   }

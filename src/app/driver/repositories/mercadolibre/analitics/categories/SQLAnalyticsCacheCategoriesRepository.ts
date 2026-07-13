@@ -58,4 +58,6 @@ export class SQLAnalyticsCacheCategoriesRepository implements ISQLAnalyticsCache
       `
     );
   }
+
+  
 }

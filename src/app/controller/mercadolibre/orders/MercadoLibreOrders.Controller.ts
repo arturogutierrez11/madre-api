@@ -181,7 +181,10 @@ Devuelve órdenes, revenue y aporte_ml agrupados por estado_orden.
   })
   @ApiQuery({ name: 'fromDate', required: false, example: '2026-05-01 00:00:00' })
   @ApiQuery({ name: 'toDate', required: false, example: '2026-05-31 23:59:59' })
-  async getOrdersByStatus(@Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
+  async getOrdersByStatus(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string
+  ) {
     return {
       items: await this.ordersService.getOrdersByStatus({
         fromDate,

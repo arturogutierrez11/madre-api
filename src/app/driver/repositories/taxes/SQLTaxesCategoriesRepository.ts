@@ -50,7 +50,9 @@ export class SQLTaxesCategoriesRepository implements ISQLTaxesCategoriesReposito
   }
 
   async findManyByMla(idMlas: string[]): Promise<TaxesCategoryRow[]> {
-    const normalizedIds = [...new Set((idMlas ?? []).map(id => this.normalizeIdMla(id)).filter(Boolean))];
+    const normalizedIds = [
+      ...new Set((idMlas ?? []).map(id => this.normalizeIdMla(id)).filter(Boolean))
+    ];
 
     if (!normalizedIds.length) {
       return [];
@@ -83,9 +85,7 @@ export class SQLTaxesCategoriesRepository implements ISQLTaxesCategoriesReposito
   }
 
   private normalizeIdMla(idMla: string): string {
-    return String(idMla ?? '')
-      .trim()
-      .toUpperCase();
+    return String(idMla ?? '').trim().toUpperCase();
   }
 
   private mapRow(row: any): TaxesCategoryRow {
@@ -98,11 +98,17 @@ export class SQLTaxesCategoriesRepository implements ISQLTaxesCategoriesReposito
       iva: row.iva != null ? Number(row.iva) : null,
       derechos: row.derechos != null ? Number(row.derechos) : null,
       composicion_conf_automeli_iva:
-        row.composicion_conf_automeli_iva != null ? Number(row.composicion_conf_automeli_iva) : null,
+        row.composicion_conf_automeli_iva != null
+          ? Number(row.composicion_conf_automeli_iva)
+          : null,
       composicion_conf_automeli_imp2:
-        row.composicion_conf_automeli_imp2 != null ? Number(row.composicion_conf_automeli_imp2) : null,
+        row.composicion_conf_automeli_imp2 != null
+          ? Number(row.composicion_conf_automeli_imp2)
+          : null,
       composicion_conf_automeli_imp3:
-        row.composicion_conf_automeli_imp3 != null ? Number(row.composicion_conf_automeli_imp3) : null,
+        row.composicion_conf_automeli_imp3 != null
+          ? Number(row.composicion_conf_automeli_imp3)
+          : null,
       compuesto: row.compuesto != null ? Number(row.compuesto) : null,
       codigo_categoria_automeli: row.codigo_categoria_automeli ?? null
     };

@@ -18,7 +18,10 @@ export class MeliApiCategoriesRepository implements IMeliApiCategoriesRepository
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.baseUrl = this.configService.get<string>('MELI_GATEWAY_BASE_URL', DEFAULT_MELI_GATEWAY_BASE_URL);
+    this.baseUrl = this.configService.get<string>(
+      'MELI_GATEWAY_BASE_URL',
+      DEFAULT_MELI_GATEWAY_BASE_URL
+    );
   }
 
   async getCategoryPath(categoryId: string): Promise<string> {
@@ -29,7 +32,9 @@ export class MeliApiCategoriesRepository implements IMeliApiCategoriesRepository
 
     for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
       try {
-        const response = await axios.get(`${this.baseUrl}/meli/categories/${categoryId}/raw`);
+        const response = await axios.get(
+          `${this.baseUrl}/meli/categories/${categoryId}/raw`
+        );
 
         const pathFromRoot: MeliApiCategoryNode[] = response.data?.path_from_root ?? [];
         const path = pathFromRoot.map(node => node.name).join(' > ');

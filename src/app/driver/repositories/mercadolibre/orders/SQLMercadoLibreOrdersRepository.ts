@@ -161,7 +161,9 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
   }): Promise<MercadoLibreOrdersAporteMlTimeSeriesItem[]> {
     const { whereClause, whereParams } = this.buildAporteMlWhereClause(params);
     const periodExpression =
-      params.groupBy === 'month' ? "DATE_FORMAT(fecha_venta, '%Y-%m')" : "DATE_FORMAT(fecha_venta, '%Y-%m-%d')";
+      params.groupBy === 'month'
+        ? "DATE_FORMAT(fecha_venta, '%Y-%m')"
+        : "DATE_FORMAT(fecha_venta, '%Y-%m-%d')";
 
     const rows = await this.entityManager.query(
       `
@@ -186,7 +188,10 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
     }));
   }
 
-  async getOrdersByStatus(params: { fromDate: string; toDate?: string }): Promise<MercadoLibreOrdersByStatusItem[]> {
+  async getOrdersByStatus(params: {
+    fromDate: string;
+    toDate?: string;
+  }): Promise<MercadoLibreOrdersByStatusItem[]> {
     const whereParts = ['aporte_ml IS NOT NULL', 'aporte_ml <> 0', 'fecha_venta >= ?'];
     const whereParams: any[] = [params.fromDate];
 
@@ -251,7 +256,12 @@ export class SQLMercadoLibreOrdersRepository implements ISQLMercadoLibreOrdersRe
     return Number(countRows?.[0]?.total ?? 0);
   }
 
-  private buildPaginatedResult<T>(items: T[], total: number, limit: number, offset: number): PaginatedResult<T> {
+  private buildPaginatedResult<T>(
+    items: T[],
+    total: number,
+    limit: number,
+    offset: number
+  ): PaginatedResult<T> {
     return {
       items,
       total,

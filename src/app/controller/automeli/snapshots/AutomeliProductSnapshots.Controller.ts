@@ -195,9 +195,7 @@ Formatos soportados:
 
     const normalizedFields = Array.isArray(fields)
       ? fields.flatMap(value => String(value).split(','))
-      : fields
-        ? String(fields).split(',')
-        : undefined;
+      : fields ? String(fields).split(',') : undefined;
 
     return this.snapshotsService.findBySkus({
       skus: normalized,

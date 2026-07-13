@@ -29,7 +29,11 @@ export class MarketplaceProductsBulkController {
     private readonly productSyncUpdateService: ProductSyncUpdateService
   ) {}
 
-  private buildStatusSummary(marketplace: string, total: number, rows: Array<{ status: string; total: number }>) {
+  private buildStatusSummary(
+    marketplace: string,
+    total: number,
+    rows: Array<{ status: string; total: number }>
+  ) {
     const normalizedRows = rows.map(row => ({
       status: row.status,
       total: Number(row.total ?? 0),
@@ -129,7 +133,8 @@ export class MarketplaceProductsBulkController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Ver un SKU en todos los marketplaces',
-    description: 'Devuelve todos los marketplaces donde existe el sellerSku junto con precio, stock y estado actual.'
+    description:
+      'Devuelve todos los marketplaces donde existe el sellerSku junto con precio, stock y estado actual.'
   })
   @ApiParam({
     name: 'sellerSku',
@@ -192,7 +197,8 @@ export class MarketplaceProductsBulkController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Listar todos los SKUs con snapshot por marketplace',
-    description: 'Devuelve SKUs paginados y, para cada uno, el detalle por marketplace con precio, stock y estado.'
+    description:
+      'Devuelve SKUs paginados y, para cada uno, el detalle por marketplace con precio, stock y estado.'
   })
   @ApiQuery({
     name: 'limit',

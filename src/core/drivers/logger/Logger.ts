@@ -4,7 +4,7 @@ export class Logger {
       timestamp: new Date().toISOString(),
       level: level.toUpperCase(),
       message: message,
-      service: process.env.SERVICE_NAME
+      service: process.env.SERVICE_NAME,
     };
     return JSON.stringify(logEntry);
   }

@@ -3,7 +3,7 @@ const FOOTER_MARKERS = [
   'importante para tu producto',
   'importante!!',
   'importante:',
-  'preguntas frecuentes'
+  'preguntas frecuentes',
 ];
 
 /**

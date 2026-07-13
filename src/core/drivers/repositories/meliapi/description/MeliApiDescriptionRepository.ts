@@ -15,7 +15,10 @@ export class MeliApiDescriptionRepository implements IMeliApiDescriptionReposito
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.baseUrl = this.configService.get<string>('MELI_GATEWAY_BASE_URL', DEFAULT_MELI_GATEWAY_BASE_URL);
+    this.baseUrl = this.configService.get<string>(
+      'MELI_GATEWAY_BASE_URL',
+      DEFAULT_MELI_GATEWAY_BASE_URL
+    );
   }
 
   async getItemDescription(itemId: string): Promise<MeliApiItemDescription> {
@@ -23,7 +26,9 @@ export class MeliApiDescriptionRepository implements IMeliApiDescriptionReposito
 
     for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
       try {
-        const response = await axios.get(`${this.baseUrl}/meli/products/${itemId}/description`);
+        const response = await axios.get(
+          `${this.baseUrl}/meli/products/${itemId}/description`
+        );
 
         return { plainText: response.data?.plain_text ?? '' };
       } catch (error: any) {

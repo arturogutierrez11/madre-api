@@ -17,8 +17,8 @@ const CACHE_TTL_SECONDS = 5 * 60 * 60; // 5 hours
       useFactory: async (redisClient: Redis) => ({
         store: redisInsStore(redisClient, {
           ttl: CACHE_TTL_SECONDS,
-          max: 1000000
-        })
+          max: 1000000,
+        }),
       }),
       inject: ['REDIS_CLIENT']
     })

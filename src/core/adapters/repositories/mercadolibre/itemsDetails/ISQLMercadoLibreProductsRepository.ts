@@ -27,7 +27,10 @@ export interface ISQLMercadoLibreProductsRepository {
   updateFullBulkProducts(params: { sellerId: string; products: MercadoLibreProduct[] }): Promise<number>;
   findManyByIds(params: { sellerId: string; ids: string[] }): Promise<MercadoLibreProduct[]>;
 
-  findDeduplicatedBySku(params: { limit: number; offset: number }): Promise<DeduplicatedBySkuResult>;
+  findDeduplicatedBySku(params: {
+    limit: number;
+    offset: number;
+  }): Promise<DeduplicatedBySkuResult>;
 
   findCategoryIdsBySellerSkus(skus: string[]): Promise<SellerSkuCategoryLookupResult[]>;
 }
