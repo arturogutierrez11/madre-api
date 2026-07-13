@@ -33,5 +33,3 @@ export class AutomeliProductsStateRedisCache implements IAutomeliProductsStateCa
     }
   }
 }
-
-

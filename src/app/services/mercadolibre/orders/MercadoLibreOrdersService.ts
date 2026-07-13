@@ -44,11 +44,7 @@ export class MercadoLibreOrdersService {
     });
   }
 
-  async getAporteMlOverview(params: {
-    fromDate?: string;
-    toDate?: string;
-    status?: string;
-  }) {
+  async getAporteMlOverview(params: { fromDate?: string; toDate?: string; status?: string }) {
     return this.ordersRepository.getAporteMlOverview({
       fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
       toDate: params.toDate?.trim() || undefined,
@@ -56,13 +52,10 @@ export class MercadoLibreOrdersService {
     });
   }
 
-  async getAporteMlTimeSeries(params: {
-    fromDate?: string;
-    toDate?: string;
-    status?: string;
-    groupBy?: string;
-  }) {
-    const normalizedGroupBy = String(params.groupBy ?? 'day').trim().toLowerCase();
+  async getAporteMlTimeSeries(params: { fromDate?: string; toDate?: string; status?: string; groupBy?: string }) {
+    const normalizedGroupBy = String(params.groupBy ?? 'day')
+      .trim()
+      .toLowerCase();
 
     return this.ordersRepository.getAporteMlTimeSeries({
       fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
@@ -72,10 +65,7 @@ export class MercadoLibreOrdersService {
     });
   }
 
-  async getOrdersByStatus(params: {
-    fromDate?: string;
-    toDate?: string;
-  }) {
+  async getOrdersByStatus(params: { fromDate?: string; toDate?: string }) {
     return this.ordersRepository.getOrdersByStatus({
       fromDate: params.fromDate?.trim() || DEFAULT_FROM_DATE,
       toDate: params.toDate?.trim() || undefined
@@ -91,7 +81,9 @@ export class MercadoLibreOrdersService {
   }
 
   private toSafeStatus(value?: string) {
-    const normalized = String(value ?? '').trim().toLowerCase();
+    const normalized = String(value ?? '')
+      .trim()
+      .toLowerCase();
     return normalized || undefined;
   }
 }

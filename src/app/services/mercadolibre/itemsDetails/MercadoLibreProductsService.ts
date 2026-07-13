@@ -71,16 +71,18 @@ export class MercadoLibreProductsService {
     return this.productsRepository.findManyByIds(params);
   }
 
-  async findCategoryIdsBySellerSkus(params: {
-    skus: string[];
-    limit?: number;
-    offset?: number;
-  }) {
-    const normalizedSkus = [...new Set(
-      (params.skus ?? [])
-        .map(sku => String(sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+  async findCategoryIdsBySellerSkus(params: { skus: string[]; limit?: number; offset?: number }) {
+    const normalizedSkus = [
+      ...new Set(
+        (params.skus ?? [])
+          .map(sku =>
+            String(sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     const safeLimit = Math.min(Math.max(Number(params.limit) || 50, 1), 500);
     const safeOffset = Math.max(Number(params.offset) || 0, 0);

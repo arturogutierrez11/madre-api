@@ -9,7 +9,9 @@ export class TaxesCategoriesService {
   ) {}
 
   async findByMla(mla: string) {
-    const normalizedMla = String(mla ?? '').trim().toUpperCase();
+    const normalizedMla = String(mla ?? '')
+      .trim()
+      .toUpperCase();
 
     if (!normalizedMla) {
       throw new BadRequestException('mla is required');

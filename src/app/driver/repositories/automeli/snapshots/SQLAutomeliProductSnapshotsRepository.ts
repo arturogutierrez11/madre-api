@@ -33,11 +33,17 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
   }
 
   async findBySkus(skus: string[]): Promise<AutomeliProductSnapshotRecord[]> {
-    const normalizedSkus = [...new Set(
-      (skus ?? [])
-        .map(sku => String(sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    const normalizedSkus = [
+      ...new Set(
+        (skus ?? [])
+          .map(sku =>
+            String(sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     if (!normalizedSkus.length) {
       return [];
@@ -213,9 +219,7 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
       return 0;
     }
 
-    const placeholders = products
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())')
-      .join(',');
+    const placeholders = products.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())').join(',');
 
     const values: any[] = [];
 
@@ -305,14 +309,7 @@ export class SQLAutomeliProductSnapshotsRepository implements IAutomeliProductSn
     values.push(`%${value.trim()}%`);
   }
 
-  private pushNumberFilter(
-    where: string[],
-    values: any[],
-    column: string,
-    exact?: number,
-    min?: number,
-    max?: number
-  ) {
+  private pushNumberFilter(where: string[], values: any[], column: string, exact?: number, min?: number, max?: number) {
     if (exact != null && !Number.isNaN(Number(exact))) {
       where.push(`${column} = ?`);
       values.push(Number(exact));

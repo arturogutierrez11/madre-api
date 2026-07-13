@@ -26,10 +26,7 @@ export class PromotionCampaignMlaService {
   async list(limit: number, offset: number) {
     const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
-    const [items, total] = await Promise.all([
-      this.repository.list(safeLimit, safeOffset),
-      this.repository.count()
-    ]);
+    const [items, total] = await Promise.all([this.repository.list(safeLimit, safeOffset), this.repository.count()]);
 
     return {
       items,
@@ -43,7 +40,9 @@ export class PromotionCampaignMlaService {
   }
 
   private requireValidMla(mla: string): string {
-    const normalized = String(mla ?? '').trim().toUpperCase();
+    const normalized = String(mla ?? '')
+      .trim()
+      .toUpperCase();
 
     if (!normalized) {
       throw new BadRequestException('mla is required');
@@ -53,11 +52,17 @@ export class PromotionCampaignMlaService {
   }
 
   private requireValidMlas(mlas: string[], maxItems = 1000): string[] {
-    const normalized = [...new Set(
-      (mlas ?? [])
-        .map(mla => String(mla ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    const normalized = [
+      ...new Set(
+        (mlas ?? [])
+          .map(mla =>
+            String(mla ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     if (!normalized.length) {
       throw new BadRequestException('mlas must contain at least one item');

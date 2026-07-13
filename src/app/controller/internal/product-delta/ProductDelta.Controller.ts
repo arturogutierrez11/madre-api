@@ -1,21 +1,5 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  Query,
-  UseGuards
-} from '@nestjs/common';
-import {
-  ApiBody,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiSecurity,
-  ApiTags
-} from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { InternalApiKeyGuard } from 'src/app/guards/internal-api-key.guard';
 import { ProductDeltaService } from 'src/app/services/product-delta/ProductDeltaService';
 import { UpdateCursorDto } from './dto/UpdateCursor.dto';

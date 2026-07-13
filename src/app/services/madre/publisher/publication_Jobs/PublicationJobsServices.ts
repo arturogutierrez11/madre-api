@@ -47,7 +47,10 @@ export class PublicationJobsServices {
   }
 
   async claimJobs(limit?: number) {
-    const safeLimit = Math.min(Math.max(Number(limit) || PublicationJobsServices.MAX_CLAIM_JOBS, 1), PublicationJobsServices.MAX_CLAIM_JOBS);
+    const safeLimit = Math.min(
+      Math.max(Number(limit) || PublicationJobsServices.MAX_CLAIM_JOBS, 1),
+      PublicationJobsServices.MAX_CLAIM_JOBS
+    );
 
     const items = await this.repository.claimJobs(safeLimit);
 

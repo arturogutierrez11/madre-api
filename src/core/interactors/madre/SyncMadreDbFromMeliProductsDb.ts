@@ -78,7 +78,9 @@ export class SyncMadreDbFromMeliProductsDb {
         const products = result.items;
         stats.totalFetched += products.length;
 
-        console.log(`[MeliProductsImport] Fetched ${products.length} deduplicated products (total unique SKUs: ${result.total})`);
+        console.log(
+          `[MeliProductsImport] Fetched ${products.length} deduplicated products (total unique SKUs: ${result.total})`
+        );
 
         if (products.length > 0) {
           const changedProducts = await this.productsStateService.filterChangedProducts(products);
@@ -129,9 +131,7 @@ export class SyncMadreDbFromMeliProductsDb {
     for (let i = 0; i < changedProducts.length; i += PROCESS_CHUNK_SIZE) {
       const chunk = changedProducts.slice(i, i + PROCESS_CHUNK_SIZE);
 
-      const importData = await Promise.all(
-        chunk.map(({ product }) => this.mapToImportData(product))
-      );
+      const importData = await Promise.all(chunk.map(({ product }) => this.mapToImportData(product)));
 
       const upserted = await this.productRepository.bulkUpsertFromMeliProducts(importData);
       totalUpserted += upserted;
@@ -159,9 +159,7 @@ export class SyncMadreDbFromMeliProductsDb {
       console.error(`[MeliProductsImport] Failed to fetch category for ${mlProduct.id}:`, error.message);
     }
 
-    const images = (mlProduct.pictures ?? [])
-      .slice(0, 10)
-      .map((url, i) => ({ position: i + 1, url }));
+    const images = (mlProduct.pictures ?? []).slice(0, 10).map((url, i) => ({ position: i + 1, url }));
 
     return {
       sku: mlProduct.sellerSku!,
@@ -193,9 +191,7 @@ export class SyncMadreDbFromMeliProductsDb {
 
   private logSummary(stats: SyncStats, duration: string): void {
     const separator = '═'.repeat(50);
-    const changeRate = stats.totalFetched > 0
-      ? ((stats.totalChanged / stats.totalFetched) * 100).toFixed(2)
-      : '0.00';
+    const changeRate = stats.totalFetched > 0 ? ((stats.totalChanged / stats.totalFetched) * 100).toFixed(2) : '0.00';
 
     console.log(`
 ${separator}

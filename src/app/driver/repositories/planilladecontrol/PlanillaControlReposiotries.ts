@@ -23,9 +23,7 @@ export class PlanillaControlReposiotries implements IPlanillaControlRepository {
     if (!prepared.identificador) {
       prepared.identificador = id;
     }
-    const columns = ['id', ...Object.keys(prepared)] as Array<
-      PlanillaControlColumn | 'id'
-    >;
+    const columns = ['id', ...Object.keys(prepared)] as Array<PlanillaControlColumn | 'id'>;
 
     if (!columns.length) {
       throw new Error('No valid columns provided for insert');

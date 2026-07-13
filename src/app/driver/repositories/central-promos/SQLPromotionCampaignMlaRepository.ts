@@ -117,14 +117,12 @@ export class SQLPromotionCampaignMlaRepository implements IPromotionCampaignMlaR
   }
 
   private normalizeMla(mla: string): string {
-    return String(mla ?? '').trim().toUpperCase();
+    return String(mla ?? '')
+      .trim()
+      .toUpperCase();
   }
 
   private normalizeMlas(mlas: string[]): string[] {
-    return [...new Set(
-      (mlas ?? [])
-        .map(mla => this.normalizeMla(mla))
-        .filter(Boolean)
-    )];
+    return [...new Set((mlas ?? []).map(mla => this.normalizeMla(mla)).filter(Boolean))];
   }
 }

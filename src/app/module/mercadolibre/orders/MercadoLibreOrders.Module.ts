@@ -5,9 +5,7 @@ import { SQLMercadoLibreOrdersRepository } from 'src/app/driver/repositories/mer
 import { MercadoLibreOrdersService } from 'src/app/services/mercadolibre/orders/MercadoLibreOrdersService';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([])
-  ],
+  imports: [TypeOrmModule.forFeature([])],
   controllers: [MercadoLibreOrdersController],
   providers: [
     MercadoLibreOrdersService,

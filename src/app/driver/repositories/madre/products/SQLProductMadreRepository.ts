@@ -121,11 +121,17 @@ export class SQLProductMadreRepository implements IProductsRepository {
   }
 
   async findStatusSnapshotsBySkus(skus: string[]): Promise<ProductStatusSnapshot[]> {
-    const normalizedSkus = [...new Set(
-      (skus ?? [])
-        .map(sku => String(sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    const normalizedSkus = [
+      ...new Set(
+        (skus ?? [])
+          .map(sku =>
+            String(sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     if (!normalizedSkus.length) {
       return [];
@@ -162,22 +168,31 @@ export class SQLProductMadreRepository implements IProductsRepository {
       ])
     );
 
-    return normalizedSkus.map(sku => rowMap.get(sku) ?? {
-      sku,
-      price: 0,
-      amazonPrice: null,
-      maxWeight: null,
-      stock: 0,
-      status: null
-    });
+    return normalizedSkus.map(
+      sku =>
+        rowMap.get(sku) ?? {
+          sku,
+          price: 0,
+          amazonPrice: null,
+          maxWeight: null,
+          stock: 0,
+          status: null
+        }
+    );
   }
 
   async findImageSnapshotsBySkus(skus: string[]): Promise<ProductImagesSnapshot[]> {
-    const normalizedSkus = [...new Set(
-      (skus ?? [])
-        .map(sku => String(sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    const normalizedSkus = [
+      ...new Set(
+        (skus ?? [])
+          .map(sku =>
+            String(sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     if (!normalizedSkus.length) {
       return [];
@@ -215,10 +230,13 @@ export class SQLProductMadreRepository implements IProductsRepository {
       ])
     );
 
-    return normalizedSkus.map(sku => rowMap.get(sku) ?? {
-      sku,
-      images: []
-    });
+    return normalizedSkus.map(
+      sku =>
+        rowMap.get(sku) ?? {
+          sku,
+          images: []
+        }
+    );
   }
 
   async findSkusWithoutMaxWeight(): Promise<string[]> {
@@ -232,11 +250,17 @@ export class SQLProductMadreRepository implements IProductsRepository {
       `
     );
 
-    return [...new Set(
-      rows
-        .map((row: any) => String(row.sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    return [
+      ...new Set(
+        rows
+          .map((row: any) =>
+            String(row.sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
   }
 
   async bulkUpdateMaxWeightBySku(products: ProductWeightUpdateData[]): Promise<number> {
@@ -290,9 +314,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
   private async executeBulkUpsertFromMeli(products: MeliProductImportData[]): Promise<number> {
     if (products.length === 0) return 0;
 
-    const placeholders = products
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .join(',');
+    const placeholders = products.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
 
     const values: any[] = [];
 
@@ -304,8 +326,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
         }
       }
 
-      const attributesJson =
-        p.attributes != null ? JSON.stringify(p.attributes.raw) : null;
+      const attributesJson = p.attributes != null ? JSON.stringify(p.attributes.raw) : null;
 
       values.push(
         p.sku,
@@ -368,9 +389,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amazonPrice ?? 'NULL'}`)
       .join(' ');
 
-    const maxWeightCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight ?? 'NULL'}`)
-      .join(' ');
+    const maxWeightCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight ?? 'NULL'}`).join(' ');
 
     const stockCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.stock}`).join(' ');
 
@@ -380,9 +399,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.shippingTime ?? 'NULL'}`)
       .join(' ');
 
-    const meliStatusCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.meliStatus}'`)
-      .join(' ');
+    const meliStatusCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN '${p.meliStatus}'`).join(' ');
 
     const amzStatusCases = products
       .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.amzStatus != null ? `'${p.amzStatus}'` : 'NULL'}`)
@@ -445,9 +462,7 @@ export class SQLProductMadreRepository implements IProductsRepository {
     }
 
     const skus = products.map(p => `'${this.escapeSku(p.sku)}'`).join(',');
-    const maxWeightCases = products
-      .map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight}`)
-      .join(' ');
+    const maxWeightCases = products.map(p => `WHEN '${this.escapeSku(p.sku)}' THEN ${p.maxWeight}`).join(' ');
 
     const sql = `
       UPDATE productos_madre

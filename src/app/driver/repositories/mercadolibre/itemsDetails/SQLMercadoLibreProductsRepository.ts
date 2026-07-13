@@ -54,11 +54,17 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
   }
 
   async findCategoryIdsBySellerSkus(skus: string[]): Promise<SellerSkuCategoryLookupResult[]> {
-    const normalizedSkus = [...new Set(
-      (skus ?? [])
-        .map(sku => String(sku ?? '').trim().toUpperCase())
-        .filter(Boolean)
-    )];
+    const normalizedSkus = [
+      ...new Set(
+        (skus ?? [])
+          .map(sku =>
+            String(sku ?? '')
+              .trim()
+              .toUpperCase()
+          )
+          .filter(Boolean)
+      )
+    ];
 
     if (!normalizedSkus.length) {
       return [];
@@ -86,7 +92,9 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
     }
 
     for (const row of rows) {
-      const sku = String(row.seller_sku ?? '').trim().toUpperCase();
+      const sku = String(row.seller_sku ?? '')
+        .trim()
+        .toUpperCase();
       const current = grouped.get(sku) ?? { sku, matches: [] };
 
       current.matches.push({
@@ -244,10 +252,7 @@ export class SQLMercadoLibreProductsRepository implements ISQLMercadoLibreProduc
       .replace('T', ' ');
   }
 
-  async findDeduplicatedBySku(params: {
-    limit: number;
-    offset: number;
-  }): Promise<DeduplicatedBySkuResult> {
+  async findDeduplicatedBySku(params: { limit: number; offset: number }): Promise<DeduplicatedBySkuResult> {
     const { limit, offset } = params;
 
     const countResult = await this.entityManager.query(`

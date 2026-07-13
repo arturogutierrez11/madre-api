@@ -24,6 +24,21 @@ export class UpdateOrderStatusDTO {
   @IsString()
   floxu_code?: string | null;
 
+  @ApiPropertyOptional({ example: null, nullable: true, description: 'Número de factura' })
+  @IsOptional()
+  @IsString()
+  invoice_number?: string | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true, description: 'URL de la factura' })
+  @IsOptional()
+  @IsString()
+  invoice_url?: string | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true, description: 'Fecha de factura ISO 8601 (DATETIME UTC)' })
+  @IsOptional()
+  @IsString()
+  invoice_date?: string | null;
+
   @ApiPropertyOptional({ example: null, nullable: true })
   @IsOptional()
   @IsString()

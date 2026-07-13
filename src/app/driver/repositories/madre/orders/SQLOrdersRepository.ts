@@ -29,6 +29,7 @@ const INSERT_COLUMNS = [
   'shipping_city',
   'shipping_province',
   'shipping_zip_code',
+  'estimated_delivery_date',
   'source_payload',
   'normalized_payload',
   'source_schema_version'
@@ -40,9 +41,12 @@ const SELECT_FIELDS = `
   customer_name, customer_document, customer_phone, customer_email,
   amount_total, currency, status, delivery_status, items_quantity,
   shipping_address, shipping_city, shipping_province, shipping_zip_code,
+  DATE_FORMAT(estimated_delivery_date, '%Y-%m-%dT%H:%i:%sZ') AS estimated_delivery_date,
   source_payload, normalized_payload, source_schema_version,
   persistence_status, notification_system_a_status, notification_system_b_status,
-  floxu_code, last_error,
+  floxu_code, invoice_number, invoice_url,
+  DATE_FORMAT(invoice_date, '%Y-%m-%dT%H:%i:%sZ') AS invoice_date,
+  last_error,
   DATE_FORMAT(last_processed_at, '%Y-%m-%dT%H:%i:%sZ') AS last_processed_at,
   DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
   DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
@@ -97,6 +101,7 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
       order.shipping_city ?? null,
       order.shipping_province ?? null,
       order.shipping_zip_code ?? null,
+      this.toMysqlDateTime(order.estimated_delivery_date),
       JSON.stringify(order.source_payload ?? {}),
       order.normalized_payload ? JSON.stringify(order.normalized_payload) : null,
       order.source_schema_version ?? null
@@ -157,6 +162,9 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
     if (data.notification_system_b_status !== undefined)
       assign('notification_system_b_status', data.notification_system_b_status);
     if (data.floxu_code !== undefined) assign('floxu_code', data.floxu_code);
+    if (data.invoice_number !== undefined) assign('invoice_number', data.invoice_number);
+    if (data.invoice_url !== undefined) assign('invoice_url', data.invoice_url);
+    if (data.invoice_date !== undefined) assign('invoice_date', this.toMysqlDateTime(data.invoice_date));
     if (data.last_error !== undefined) assign('last_error', data.last_error);
 
     sets.push('last_processed_at = NOW()');

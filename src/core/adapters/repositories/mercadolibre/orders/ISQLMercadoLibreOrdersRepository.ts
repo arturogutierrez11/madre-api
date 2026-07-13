@@ -90,8 +90,5 @@ export interface ISQLMercadoLibreOrdersRepository {
     groupBy: 'day' | 'month';
   }): Promise<MercadoLibreOrdersAporteMlTimeSeriesItem[]>;
 
-  getOrdersByStatus(params: {
-    fromDate: string;
-    toDate?: string;
-  }): Promise<MercadoLibreOrdersByStatusItem[]>;
+  getOrdersByStatus(params: { fromDate: string; toDate?: string }): Promise<MercadoLibreOrdersByStatusItem[]>;
 }
