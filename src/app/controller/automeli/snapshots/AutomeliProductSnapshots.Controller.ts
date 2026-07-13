@@ -33,9 +33,9 @@ export class AutomeliProductSnapshotsController {
 Devuelve todos los registros de automeli_product_snapshots con paginado.
 
 📌 Soporta filtros por todos los campos de la tabla:
-- texto: mla, sku, amzStatus, changed, meliStatus, listingTypeId, subStatus
+- texto: mla, sku, brand, title, manufacturingTime, pauseReason, amzStatus, changed, meliStatus, listingTypeId, subStatus, idMeliMainVariant, image, imageChangedUrl, permalink, meliCategoryName, meliMainCategory, shippingFrom
 - exactos y rangos para numéricos
-- rangos para createdAt y updatedAt
+- rangos para pausedSince, dateUpdated, dateUpdatedMeli, createdAt y updatedAt
     `
   })
   @ApiOkResponse({
@@ -45,17 +45,37 @@ Devuelve todos los registros de automeli_product_snapshots con paginado.
           {
             mla: 'MLA1488473899',
             sku: 'B0BLHBC7JM',
+            brand: 'COSORI',
+            title: 'Freidora De Aire Compacta Cosori Turboblaze 6.0l Asa, Horn Gris Oscuro',
+            manufacturingTime: '11 dias',
+            pauseReason: null,
+            pausedSince: null,
             totalPrice: 59.01,
             scrapedPrice: 59.01,
+            shippingCost: 0,
+            taxes: 0,
             stockQuantity: 0,
             amzStatus: 'Agotado',
             changed: '--',
             maxWeight: 1,
             meliSalePrice: 662999,
+            discountTotalPrice: 4,
             meliStatus: 'paused',
             listingTypeId: 'gold_special',
             subStatus: 'out_of_stock',
             appStatus: 0,
+            idMeliMainVariant: null,
+            image: 'https://m.media-amazon.com/images/I/71j8G9EH-DL.jpg',
+            imageChanged: 1,
+            imageChangedUrl: 'https://m.media-amazon.com/images/I/81R9sA3IyBL.jpg',
+            permalink: 'http://articulo.mercadolibre.com.ar/MLA-1424202023-freidora-de-aire-compacta-cosori-turboblaze-60l-asa-horn-_JM',
+            meliCategoryName: 'De Aire',
+            meliMainCategory: 'Electrodomesticos y Aires Ac.',
+            shippingFrom: 'amazon',
+            taxCategoryId: 26,
+            createUsingPublisher: 1,
+            dateUpdated: '2026-06-25T15:00:21.000Z',
+            dateUpdatedMeli: '2026-06-25T15:18:31.000Z',
             createdAt: '2026-05-12T12:00:00.000Z',
             updatedAt: '2026-05-12T12:00:00.000Z'
           }
@@ -75,12 +95,24 @@ Devuelve todos los registros de automeli_product_snapshots con paginado.
       offset: query.offset != null ? Number(query.offset) : 0,
       mla: query.mla,
       sku: query.sku,
+      brand: query.brand,
+      title: query.title,
+      manufacturingTime: query.manufacturingTime,
+      pauseReason: query.pauseReason,
+      pausedSinceFrom: query.pausedSinceFrom,
+      pausedSinceTo: query.pausedSinceTo,
       totalPrice: query.totalPrice != null ? Number(query.totalPrice) : undefined,
       totalPriceMin: query.totalPriceMin != null ? Number(query.totalPriceMin) : undefined,
       totalPriceMax: query.totalPriceMax != null ? Number(query.totalPriceMax) : undefined,
       scrapedPrice: query.scrapedPrice != null ? Number(query.scrapedPrice) : undefined,
       scrapedPriceMin: query.scrapedPriceMin != null ? Number(query.scrapedPriceMin) : undefined,
       scrapedPriceMax: query.scrapedPriceMax != null ? Number(query.scrapedPriceMax) : undefined,
+      shippingCost: query.shippingCost != null ? Number(query.shippingCost) : undefined,
+      shippingCostMin: query.shippingCostMin != null ? Number(query.shippingCostMin) : undefined,
+      shippingCostMax: query.shippingCostMax != null ? Number(query.shippingCostMax) : undefined,
+      taxes: query.taxes != null ? Number(query.taxes) : undefined,
+      taxesMin: query.taxesMin != null ? Number(query.taxesMin) : undefined,
+      taxesMax: query.taxesMax != null ? Number(query.taxesMax) : undefined,
       stockQuantity: query.stockQuantity != null ? Number(query.stockQuantity) : undefined,
       stockQuantityMin: query.stockQuantityMin != null ? Number(query.stockQuantityMin) : undefined,
       stockQuantityMax: query.stockQuantityMax != null ? Number(query.stockQuantityMax) : undefined,
@@ -92,10 +124,31 @@ Devuelve todos los registros de automeli_product_snapshots con paginado.
       meliSalePrice: query.meliSalePrice != null ? Number(query.meliSalePrice) : undefined,
       meliSalePriceMin: query.meliSalePriceMin != null ? Number(query.meliSalePriceMin) : undefined,
       meliSalePriceMax: query.meliSalePriceMax != null ? Number(query.meliSalePriceMax) : undefined,
+      discountTotalPrice:
+        query.discountTotalPrice != null ? Number(query.discountTotalPrice) : undefined,
+      discountTotalPriceMin:
+        query.discountTotalPriceMin != null ? Number(query.discountTotalPriceMin) : undefined,
+      discountTotalPriceMax:
+        query.discountTotalPriceMax != null ? Number(query.discountTotalPriceMax) : undefined,
       meliStatus: query.meliStatus,
       listingTypeId: query.listingTypeId,
       subStatus: query.subStatus,
       appStatus: query.appStatus != null ? Number(query.appStatus) : undefined,
+      idMeliMainVariant: query.idMeliMainVariant,
+      image: query.image,
+      imageChanged: query.imageChanged != null ? Number(query.imageChanged) : undefined,
+      imageChangedUrl: query.imageChangedUrl,
+      permalink: query.permalink,
+      meliCategoryName: query.meliCategoryName,
+      meliMainCategory: query.meliMainCategory,
+      shippingFrom: query.shippingFrom,
+      taxCategoryId: query.taxCategoryId != null ? Number(query.taxCategoryId) : undefined,
+      createUsingPublisher:
+        query.createUsingPublisher != null ? Number(query.createUsingPublisher) : undefined,
+      dateUpdatedFrom: query.dateUpdatedFrom,
+      dateUpdatedTo: query.dateUpdatedTo,
+      dateUpdatedMeliFrom: query.dateUpdatedMeliFrom,
+      dateUpdatedMeliTo: query.dateUpdatedMeliTo,
       createdAtFrom: query.createdAtFrom,
       createdAtTo: query.createdAtTo,
       updatedAtFrom: query.updatedAtFrom,

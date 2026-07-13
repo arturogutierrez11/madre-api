@@ -9,6 +9,7 @@ export interface AutomeliProduct {
   meliStatus: string;
   subStatus: string | null;
   pauseReason: string | null;
+  pausedSince: Date | null;
   amzStatus: string | null;
   changed: string | null;
 

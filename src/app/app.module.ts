@@ -27,7 +27,9 @@ import { TaxesCategoriesModule } from './module/taxes/TaxesCategories.Module';
 import { AutomeliProductSnapshotsModule } from './module/automeli/snapshots/AutomeliProductSnapshots.Module';
 import { PlanillaControlModule } from './module/planilladecontrol/PlanillaControl.Module';
 import { OrdersModule } from './module/madre/orders/Orders.Module';
+import { XubioComprobantesModule } from './module/xubio/comprobantes/XubioComprobantes.Module';
 import { GoogleMerchantProductsModule } from './module/google-merchant/GoogleMerchantProducts.Module';
+import { InvoiceClientIssuesModule } from './module/invoice/client-issues/InvoiceClientIssues.Module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { GoogleMerchantProductsModule } from './module/google-merchant/GoogleMer
     GoogleMerchantProductsModule,
     AutomeliProductSnapshotsModule,
     PlanillaControlModule,
+    XubioComprobantesModule,
+    InvoiceClientIssuesModule,
 
     MeliProductsImportWorkerModule,
 
