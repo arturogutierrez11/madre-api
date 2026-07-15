@@ -92,6 +92,7 @@ export class XubioComprobantesService {
     documentKind?: string;
     fechaDesde?: string;
     fechaHasta?: string;
+    includeChildren?: boolean;
     limit?: number;
     offset?: number;
   }) {
@@ -104,6 +105,7 @@ export class XubioComprobantesService {
       documentKind: query.documentKind?.trim(),
       fechaDesde: query.fechaDesde?.trim(),
       fechaHasta: query.fechaHasta?.trim(),
+      includeChildren: query.includeChildren === true,
       limit: Math.min(Math.max(Number(query.limit) || 50, 1), 500),
       offset: Math.max(Number(query.offset) || 0, 0)
     });

@@ -135,6 +135,12 @@ export class XubioComprobantesController {
   @ApiQuery({ name: 'documentKind', required: false, example: 'INVOICE' })
   @ApiQuery({ name: 'fechaDesde', required: false, example: '2026-07-01' })
   @ApiQuery({ name: 'fechaHasta', required: false, example: '2026-07-31' })
+  @ApiQuery({
+    name: 'includeChildren',
+    required: false,
+    example: false,
+    description: 'Si es true, incluye productItems, cobranzaItems y percepcionItems'
+  })
   @ApiQuery({ name: 'limit', required: false, example: 50 })
   @ApiQuery({ name: 'offset', required: false, example: 0 })
   async listComprobantes(
@@ -145,6 +151,7 @@ export class XubioComprobantesController {
     @Query('documentKind') documentKind?: string,
     @Query('fechaDesde') fechaDesde?: string,
     @Query('fechaHasta') fechaHasta?: string,
+    @Query('includeChildren') includeChildren?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string
   ) {
@@ -156,6 +163,7 @@ export class XubioComprobantesController {
       documentKind,
       fechaDesde,
       fechaHasta,
+      includeChildren: String(includeChildren ?? '').toLowerCase() === 'true',
       limit: limit != null ? Number(limit) : undefined,
       offset: offset != null ? Number(offset) : undefined
     });

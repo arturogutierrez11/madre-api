@@ -220,6 +220,7 @@ export interface ISQLXubioComprobantesRepository {
     documentKind?: string;
     fechaDesde?: string;
     fechaHasta?: string;
+    includeChildren?: boolean;
     limit: number;
     offset: number;
   }): Promise<{

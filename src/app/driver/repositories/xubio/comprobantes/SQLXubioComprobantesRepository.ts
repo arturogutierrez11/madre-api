@@ -230,6 +230,7 @@ export class SQLXubioComprobantesRepository implements ISQLXubioComprobantesRepo
     documentKind?: string | undefined;
     fechaDesde?: string | undefined;
     fechaHasta?: string | undefined;
+    includeChildren?: boolean | undefined;
     limit: number;
     offset: number;
   }): Promise<{
@@ -273,7 +274,9 @@ export class SQLXubioComprobantesRepository implements ISQLXubioComprobantesRepo
       params
     );
 
-    const items = await this.hydrateComprobantes(rows);
+    const items = filters.includeChildren
+      ? await this.hydrateComprobantes(rows)
+      : rows.map(row => this.mapComprobanteRow(row));
     const total = Number(totalRows[0]?.total ?? 0);
     const hasNext = filters.offset + filters.limit < total;
 
@@ -629,6 +632,15 @@ export class SQLXubioComprobantesRepository implements ISQLXubioComprobantesRepo
     const percepcionMap = this.groupByComprobanteId(percepcionItems);
 
     return rows.map(row => ({
+      ...this.mapComprobanteRow(row),
+      productItems: productMap.get(Number(row.id)) ?? [],
+      cobranzaItems: cobranzaMap.get(Number(row.id)) ?? [],
+      percepcionItems: percepcionMap.get(Number(row.id)) ?? []
+    }));
+  }
+
+  private mapComprobanteRow(row: GenericRow): XubioComprobanteRecord {
+    return {
       id: Number(row.id),
       syncRunId: row.sync_run_id != null ? Number(row.sync_run_id) : null,
       source: row.source,
@@ -682,10 +694,10 @@ export class SQLXubioComprobantesRepository implements ISQLXubioComprobantesRepo
       syncedAt: this.toIso(row.synced_at) ?? new Date().toISOString(),
       createdAt: this.toIso(row.created_at) ?? new Date().toISOString(),
       updatedAt: this.toIso(row.updated_at) ?? new Date().toISOString(),
-      productItems: productMap.get(Number(row.id)) ?? [],
-      cobranzaItems: cobranzaMap.get(Number(row.id)) ?? [],
-      percepcionItems: percepcionMap.get(Number(row.id)) ?? []
-    }));
+      productItems: [],
+      cobranzaItems: [],
+      percepcionItems: []
+    };
   }
 
   private groupByComprobanteId(rows: GenericRow[]) {
