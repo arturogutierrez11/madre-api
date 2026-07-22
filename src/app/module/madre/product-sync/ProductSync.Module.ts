@@ -4,9 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MarketplaceProductsBulkController } from 'src/app/controller/madre/products-sync/MarketplaceProductsBulk.Controller';
 import { ProductSyncRunsController } from 'src/app/controller/madre/products-sync/ProductSyncRuns.Controller';
+import { SkuPauseFlagsController } from 'src/app/controller/madre/products-sync/SkuPauseFlags.Controller';
 
 import { SQLProductSyncRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRepository';
 import { SQLProductSyncRunRepository } from 'src/app/driver/repositories/madre/product-sync/SQLProductSyncRunRepository';
+import { SQLSkuPauseFlagRepository } from 'src/app/driver/repositories/madre/product-sync/SQLSkuPauseFlagRepository';
 
 import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/ProductSyncUpdateService';
 
@@ -26,7 +28,7 @@ import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/Pr
     })
   ],
 
-  controllers: [MarketplaceProductsBulkController, ProductSyncRunsController],
+  controllers: [MarketplaceProductsBulkController, ProductSyncRunsController, SkuPauseFlagsController],
 
   providers: [
     // =====================
@@ -34,6 +36,7 @@ import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/Pr
     // =====================
     SQLProductSyncRepository,
     SQLProductSyncRunRepository,
+    SQLSkuPauseFlagRepository,
 
     // =====================
     // SERVICES
@@ -50,9 +53,13 @@ import { ProductSyncUpdateService } from 'src/app/services/madre/product-sync/Pr
     {
       provide: 'IProductSyncRunRepository',
       useClass: SQLProductSyncRunRepository
+    },
+    {
+      provide: 'ISkuPauseFlagRepository',
+      useClass: SQLSkuPauseFlagRepository
     }
   ],
 
-  exports: ['IProductSyncRepository', ProductSyncUpdateService]
+  exports: ['IProductSyncRepository', 'ISkuPauseFlagRepository', ProductSyncUpdateService]
 })
 export class ProductSyncModule {}
