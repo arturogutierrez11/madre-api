@@ -96,6 +96,22 @@ export class SQLSkuPauseFlagRepository implements ISkuPauseFlagRepository {
     }));
   }
 
+  async listSkus(limit: number, offset: number): Promise<string[]> {
+    const rows = await this.entityManager.query(
+      `
+        SELECT sku
+        FROM product_sync_sku_pause_flags
+        ORDER BY sku ASC
+        LIMIT ? OFFSET ?
+      `,
+      [limit, offset]
+    );
+
+    return rows
+      .map((row: GenericRow) => row.sku)
+      .filter((sku: string | null) => typeof sku === 'string' && sku.trim().length > 0);
+  }
+
   async list(filters: ListSkuPauseFlagsFilters): Promise<{
     items: SkuPauseFlagRecord[];
     limit: number;

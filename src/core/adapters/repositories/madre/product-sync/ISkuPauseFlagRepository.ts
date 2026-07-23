@@ -18,6 +18,7 @@ export interface ISkuPauseFlagRepository {
   bulkUpsert(items: Array<{ sku: string; paused: boolean }>): Promise<SkuPauseFlagRecord[]>;
   findBySku(sku: string): Promise<SkuPauseFlagRecord | null>;
   findBySkus(skus: string[]): Promise<Array<{ sku: string; paused: boolean }>>;
+  listSkus(limit: number, offset: number): Promise<string[]>;
   list(filters: ListSkuPauseFlagsFilters): Promise<{
     items: SkuPauseFlagRecord[];
     limit: number;

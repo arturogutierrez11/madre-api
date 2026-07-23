@@ -89,6 +89,39 @@ export class SkuPauseFlagsController {
     return this.skuPauseFlagRepository.upsert(String(body.sku ?? '').trim().toUpperCase(), Boolean(body.paused));
   }
 
+  @Get('skus')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Listar todos los SKUs de la tabla de pause flags'
+  })
+  @ApiQuery({ name: 'limit', required: false, example: 100 })
+  @ApiQuery({ name: 'offset', required: false, example: 0 })
+  async listSkus(
+    @Query('limit') limit = '100',
+    @Query('offset') offset = '0'
+  ) {
+    const parsedLimit = Math.min(Number(limit) || 100, 500);
+    const parsedOffset = Number(offset) || 0;
+
+    const [items, summary] = await Promise.all([
+      this.skuPauseFlagRepository.listSkus(parsedLimit, parsedOffset),
+      this.skuPauseFlagRepository.list({
+        limit: parsedLimit,
+        offset: parsedOffset
+      })
+    ]);
+
+    return {
+      items,
+      limit: parsedLimit,
+      offset: parsedOffset,
+      count: items.length,
+      total: summary.total,
+      hasNext: summary.hasNext,
+      nextOffset: summary.nextOffset
+    };
+  }
+
   @Get(':sku')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
