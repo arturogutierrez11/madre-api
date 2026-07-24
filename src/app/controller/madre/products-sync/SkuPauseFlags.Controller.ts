@@ -29,7 +29,10 @@ import { UpsertSkuPauseFlagDto } from './dto/UpsertSkuPauseFlag.dto';
 
 @ApiTags('Procesos internos · Sincronización de Productos - Sync_items')
 @ApiSecurity('internal-api-key')
-@Controller('internal/marketplace/products/paused-skus')
+@Controller([
+  'internal/marketplace/paused-skus',
+  'internal/marketplace/products/paused-skus'
+])
 @UseGuards(InternalApiKeyGuard)
 export class SkuPauseFlagsController {
   constructor(
