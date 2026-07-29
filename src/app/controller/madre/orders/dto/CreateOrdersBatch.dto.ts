@@ -114,6 +114,15 @@ export class NormalizedOrderDTO {
   @IsString()
   shipping_zip_code?: string | null;
 
+  @ApiPropertyOptional({
+    example: '2026-06-02T00:00:00Z',
+    nullable: true,
+    description: 'FECHAENTREGA (Flokzu/Azure). ISO 8601; se persiste como DATETIME UTC'
+  })
+  @IsOptional()
+  @IsString()
+  estimated_delivery_date?: string | null;
+
   @ApiProperty({
     type: 'object',
     additionalProperties: true,
