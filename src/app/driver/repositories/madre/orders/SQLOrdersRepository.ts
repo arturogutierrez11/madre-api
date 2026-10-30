@@ -3,9 +3,13 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { NormalizedOrderDTO } from 'src/app/controller/madre/orders/dto/CreateOrdersBatch.dto';
 import { UpdateOrderStatusDTO } from 'src/app/controller/madre/orders/dto/UpdateOrderStatus.dto';
 import {
+  FindPendingFilters,
   InsertOrdersResult,
-  ISQLOrdersRepository
+  ISQLOrdersRepository,
+  ListOrdersFilters
 } from 'src/core/adapters/repositories/madre/orders/ISQLOrdersRepository';
+import { PaginatedResult } from 'src/core/entities/common/PaginatedResult';
+import { PaginationParams } from 'src/core/entities/common/Pagination';
 import { EntityManager } from 'typeorm';
 
 const TABLE = 'development_orders';
@@ -31,22 +35,46 @@ const INSERT_COLUMNS = [
   'shipping_zip_code',
   'source_payload',
   'normalized_payload',
-  'source_schema_version'
+  'source_schema_version',
+  'estimated_delivery_date',
+  'persistence_status',
+  'notification_system_b_status',
+  'floxu_code',
+  'vbi_sale_id',
+  'vbi_nro_venta',
+  'last_error'
 ] as const;
 
-const SELECT_FIELDS = `
+// Sin source_payload ni normalized_payload: es lo mas pesado de la fila
+const LIST_FIELDS = `
   id, marketplace, external_order_id, external_suborder_id, unique_key,
   DATE_FORMAT(purchase_date, '%Y-%m-%dT%H:%i:%sZ') AS purchase_date,
   customer_name, customer_document, customer_phone, customer_email,
   amount_total, currency, status, delivery_status, items_quantity,
   shipping_address, shipping_city, shipping_province, shipping_zip_code,
-  source_payload, normalized_payload, source_schema_version,
+  DATE_FORMAT(estimated_delivery_date, '%Y-%m-%dT%H:%i:%sZ') AS estimated_delivery_date,
+  source_schema_version,
   persistence_status, notification_system_a_status, notification_system_b_status,
-  floxu_code, last_error,
+  floxu_code, vbi_sale_id, vbi_nro_venta,
+  invoice_number, invoice_url, DATE_FORMAT(invoice_date, '%Y-%m-%dT%H:%i:%sZ') AS invoice_date,
+  last_error,
   DATE_FORMAT(last_processed_at, '%Y-%m-%dT%H:%i:%sZ') AS last_processed_at,
   DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
   DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
 `;
+
+const SELECT_FIELDS = `${LIST_FIELDS}, source_payload, normalized_payload`;
+
+// Columnas en las que busca el listado
+const SEARCH_COLUMNS = [
+  'unique_key',
+  'external_order_id',
+  'external_suborder_id',
+  'customer_name',
+  'customer_document',
+  'customer_email',
+  'floxu_code'
+];
 
 @Injectable()
 export class SQLOrdersRepository implements ISQLOrdersRepository {
@@ -99,7 +127,14 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
       order.shipping_zip_code ?? null,
       JSON.stringify(order.source_payload ?? {}),
       order.normalized_payload ? JSON.stringify(order.normalized_payload) : null,
-      order.source_schema_version ?? null
+      order.source_schema_version ?? null,
+      this.toMysqlDateTime(order.estimated_delivery_date),
+      order.persistence_status ?? 'PENDING',
+      order.notification_system_b_status ?? null,
+      order.floxu_code ?? null,
+      order.vbi_sale_id ?? null,
+      order.vbi_nro_venta ?? null,
+      order.last_error ?? null
     ]);
 
     await this.productosMadreEntityManager.query(query, params);
@@ -128,18 +163,89 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
     return this.hydrate(rows[0]);
   }
 
-  async findPending(limit: number): Promise<any[]> {
+  async findPending(limit: number, filters: FindPendingFilters = {}): Promise<any[]> {
+    const conditions = [`persistence_status = 'PENDING'`];
+    const params: unknown[] = [];
+
+    if (filters.marketplace) {
+      conditions.push('marketplace = ?');
+      params.push(filters.marketplace);
+    }
+
+    // Paginado por cursor: el id es autoincremental, sigue el orden de creacion
+    if (filters.afterId !== undefined) {
+      conditions.push('id > ?');
+      params.push(filters.afterId);
+    }
+
     const query = `
       SELECT ${SELECT_FIELDS}
       FROM ${TABLE}
-      WHERE persistence_status = 'PENDING'
-      ORDER BY created_at ASC
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY id ASC
       LIMIT ?
     `;
 
-    const rows: any[] = await this.productosMadreEntityManager.query(query, [limit]);
+    const rows: any[] = await this.productosMadreEntityManager.query(query, [...params, limit]);
 
     return rows.map(row => this.hydrate(row));
+  }
+
+  async list(filters: ListOrdersFilters, pagination: PaginationParams): Promise<PaginatedResult<any>> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.marketplace) {
+      conditions.push('marketplace = ?');
+      params.push(filters.marketplace);
+    }
+    if (filters.persistence_status) {
+      conditions.push('persistence_status = ?');
+      params.push(filters.persistence_status);
+    }
+    if (filters.from) {
+      conditions.push('purchase_date >= ?');
+      params.push(this.toMysqlDateTime(filters.from));
+    }
+    if (filters.to) {
+      conditions.push('purchase_date <= ?');
+      params.push(this.toMysqlDateTime(filters.to));
+    }
+    if (filters.search) {
+      const pattern = `%${filters.search.replace(/[\\%_]/g, char => `\\${char}`)}%`;
+      conditions.push(`(${SEARCH_COLUMNS.map(column => `${column} LIKE ?`).join(' OR ')})`);
+      params.push(...SEARCH_COLUMNS.map(() => pattern));
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [countRows, rows] = (await Promise.all([
+      this.productosMadreEntityManager.query(`SELECT COUNT(*) AS total FROM ${TABLE} ${where}`, params),
+      this.productosMadreEntityManager.query(
+        `
+        SELECT ${LIST_FIELDS}
+        FROM ${TABLE}
+        ${where}
+        ORDER BY purchase_date DESC, id DESC
+        LIMIT ? OFFSET ?
+      `,
+        [...params, pagination.limit, pagination.offset]
+      )
+    ])) as [{ total: number | string }[], any[]];
+
+    const total = Number(countRows[0]?.total ?? 0);
+    const items = rows.map(row => this.hydrate(row));
+    const hasNext = pagination.offset + items.length < total;
+
+    return {
+      items,
+      total,
+      limit: pagination.limit,
+      offset: pagination.offset,
+      count: items.length,
+      hasNext,
+      nextOffset: hasNext ? pagination.offset + items.length : null
+    };
   }
 
   async updateStatus(id: number, data: UpdateOrderStatusDTO): Promise<boolean> {
@@ -158,6 +264,12 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
       assign('notification_system_b_status', data.notification_system_b_status);
     if (data.floxu_code !== undefined) assign('floxu_code', data.floxu_code);
     if (data.last_error !== undefined) assign('last_error', data.last_error);
+    if (data.status !== undefined) assign('status', data.status);
+    if (data.delivery_status !== undefined) assign('delivery_status', data.delivery_status);
+    if (data.estimated_delivery_date !== undefined)
+      assign('estimated_delivery_date', this.toMysqlDateTime(data.estimated_delivery_date));
+    if (data.vbi_sale_id !== undefined) assign('vbi_sale_id', data.vbi_sale_id);
+    if (data.vbi_nro_venta !== undefined) assign('vbi_nro_venta', data.vbi_nro_venta);
 
     sets.push('last_processed_at = NOW()');
 
@@ -175,14 +287,18 @@ export class SQLOrdersRepository implements ISQLOrdersRepository {
   }
 
   private hydrate(row: any): any {
-    return {
+    const order = {
       ...row,
       id: Number(row.id),
       amount_total: row.amount_total === null ? null : Number(row.amount_total),
-      items_quantity: row.items_quantity === null ? null : Number(row.items_quantity),
-      source_payload: this.parseJsonField(row.source_payload),
-      normalized_payload: this.parseJsonField(row.normalized_payload)
+      items_quantity: row.items_quantity === null ? null : Number(row.items_quantity)
     };
+
+    // El listado no trae los payloads
+    if ('source_payload' in row) order.source_payload = this.parseJsonField(row.source_payload);
+    if ('normalized_payload' in row) order.normalized_payload = this.parseJsonField(row.normalized_payload);
+
+    return order;
   }
 
   private parseJsonField(value: unknown): unknown {

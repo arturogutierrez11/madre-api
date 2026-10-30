@@ -1,7 +1,11 @@
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateOrdersBatchDTO } from 'src/app/controller/madre/orders/dto/CreateOrdersBatch.dto';
 import { UpdateOrderStatusDTO } from 'src/app/controller/madre/orders/dto/UpdateOrderStatus.dto';
-import { ISQLOrdersRepository } from 'src/core/adapters/repositories/madre/orders/ISQLOrdersRepository';
+import { ListOrdersDTO } from 'src/app/controller/madre/orders/dto/ListOrders.dto';
+import {
+  FindPendingFilters,
+  ISQLOrdersRepository
+} from 'src/core/adapters/repositories/madre/orders/ISQLOrdersRepository';
 
 @Injectable()
 export class OrdersService {
@@ -39,12 +43,26 @@ export class OrdersService {
     };
   }
 
-  async findPending(limit?: number) {
+  async list(query: ListOrdersDTO) {
+    const { limit, offset, ...filters } = query;
+
+    try {
+      return await this.repository.list(filters, { limit: limit ?? 50, offset: offset ?? 0 });
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Error listing orders');
+    }
+  }
+
+  async findPending(limit?: number, filters: FindPendingFilters = {}) {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), OrdersService.MAX_PENDING_LIMIT);
 
     try {
-      const items = await this.repository.findPending(safeLimit);
-      return { limit: safeLimit, count: items.length, items };
+      const items = await this.repository.findPending(safeLimit, filters);
+      // Pagina llena: puede haber mas, se piden con afterId = nextAfterId
+      const last = items.at(-1) as { id: number } | undefined;
+      const nextAfterId = items.length === safeLimit && last ? last.id : null;
+      return { limit: safeLimit, count: items.length, nextAfterId, items };
     } catch (error) {
       console.error(error);
       throw new InternalServerErrorException('Error retrieving pending orders');
