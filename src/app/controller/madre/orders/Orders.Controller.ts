@@ -56,8 +56,12 @@ Máximo 200 por página: si \`nextAfterId\` no es null puede haber más, se pide
 `
   })
   @ApiQuery({ name: 'limit', required: false, example: 50, description: 'Máximo 200' })
-  @ApiQuery({ name: 'marketplace', required: false, example: 'fravega' })
-  @ApiQuery({ name: 'afterId', required: false, example: 120, description: 'Devuelve las órdenes con id mayor' })
+  @ApiQuery({ name: 'marketplace', required: false, description: 'Ej. fravega' })
+  @ApiQuery({
+    name: 'afterId',
+    required: false,
+    description: 'Devuelve las órdenes con id mayor (nextAfterId de la página anterior)'
+  })
   @ApiResponse({
     status: 200,
     description: 'Órdenes pendientes',

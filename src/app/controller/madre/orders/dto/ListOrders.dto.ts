@@ -4,29 +4,28 @@ import { IsDateString, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class
 import { PERSISTENCE_STATUSES } from './UpdateOrderStatus.dto';
 
 export class ListOrdersDTO {
-  @ApiPropertyOptional({ example: 'fravega' })
+  @ApiPropertyOptional({ description: 'Ej. fravega' })
   @IsOptional()
   @IsString()
   marketplace?: string;
 
-  @ApiPropertyOptional({ enum: PERSISTENCE_STATUSES, example: 'FAILED' })
+  @ApiPropertyOptional({ enum: PERSISTENCE_STATUSES })
   @IsOptional()
   @IsIn(PERSISTENCE_STATUSES)
   persistence_status?: string;
 
-  @ApiPropertyOptional({ example: '2026-10-01T00:00:00Z', description: 'Fecha de compra desde (ISO 8601, UTC)' })
+  @ApiPropertyOptional({ description: 'Fecha de compra desde (ISO 8601, UTC). Ej. 2026-10-01T00:00:00Z' })
   @IsOptional()
   @IsDateString()
   from?: string;
 
-  @ApiPropertyOptional({ example: '2026-10-31T23:59:59Z', description: 'Fecha de compra hasta (ISO 8601, UTC)' })
+  @ApiPropertyOptional({ description: 'Fecha de compra hasta (ISO 8601, UTC). Ej. 2026-10-31T23:59:59Z' })
   @IsOptional()
   @IsDateString()
   to?: string;
 
   @ApiPropertyOptional({
-    example: 'v93713051frvg-01',
-    description: 'Busca en unique_key, ids del marketplace, nombre, documento, email y TLQV'
+    description: 'Busca en unique_key, ids del marketplace, nombre, documento, email y TLQV. Ej. v93713051frvg-01'
   })
   @IsOptional()
   @IsString()
