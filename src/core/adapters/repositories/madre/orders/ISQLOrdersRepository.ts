@@ -7,9 +7,14 @@ export interface InsertOrdersResult {
   skipped: number;
 }
 
+export interface FindPendingFilters {
+  marketplace?: string;
+  afterId?: number;
+}
+
 export interface ISQLOrdersRepository {
   insertBatch(orders: NormalizedOrderDTO[]): Promise<InsertOrdersResult>;
   findByUniqueKey(uniqueKey: string): Promise<any>;
-  findPending(limit: number): Promise<any[]>;
+  findPending(limit: number, filters?: FindPendingFilters): Promise<any[]>;
   updateStatus(id: number, data: UpdateOrderStatusDTO): Promise<boolean>;
 }
