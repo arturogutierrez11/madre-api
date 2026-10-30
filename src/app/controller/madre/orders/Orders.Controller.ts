@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch,
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from 'src/app/services/madre/orders/OrdersService';
 import { CreateOrdersBatchDTO } from './dto/CreateOrdersBatch.dto';
+import { ListOrdersDTO } from './dto/ListOrders.dto';
 import { UpdateOrderStatusDTO } from './dto/UpdateOrderStatus.dto';
 
 @ApiTags('Orders')
@@ -24,6 +25,25 @@ Inserta un lote de **órdenes normalizadas** (NormalizedOrder) enviadas por **or
   })
   async insertBatch(@Body() body: CreateOrdersBatchDTO) {
     return this.service.insertBatch(body);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Listar órdenes con filtros',
+    description: `
+Listado paginado (limit/offset) ordenado por fecha de compra, de la más nueva a la más vieja.
+No incluye \`source_payload\` ni \`normalized_payload\`: para verlos usar \`GET /api/orders/{uniqueKey}\`.
+`
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Órdenes',
+    schema: {
+      example: { items: [], total: 120, limit: 50, offset: 0, count: 50, hasNext: true, nextOffset: 50 }
+    }
+  })
+  async list(@Query() query: ListOrdersDTO) {
+    return this.service.list(query);
   }
 
   @Get('pending')

@@ -104,6 +104,62 @@ describe('SQLOrdersRepository', () => {
     });
   });
 
+  describe('list', () => {
+    it('sin filtros pagina por fecha de compra y no trae los payloads', async () => {
+      query
+        .mockResolvedValueOnce([{ total: '3' }])
+        .mockResolvedValueOnce([{ id: '9', amount_total: null, items_quantity: null }]);
+
+      const result = await repository.list({}, { limit: 1, offset: 1 });
+
+      const [countSql, countParams] = query.mock.calls[0];
+      const [sql, params] = query.mock.calls[1];
+      expect(countSql).toContain('SELECT COUNT(*) AS total FROM development_orders ');
+      expect(countParams).toEqual([]);
+      expect(sql).toContain('ORDER BY purchase_date DESC, id DESC');
+      expect(sql).not.toContain('source_payload');
+      expect(params).toEqual([1, 1]);
+      expect(result).toEqual({
+        items: [{ id: 9, amount_total: null, items_quantity: null }],
+        total: 3,
+        limit: 1,
+        offset: 1,
+        count: 1,
+        hasNext: true,
+        nextOffset: 2
+      });
+    });
+
+    it('combina los filtros y escapa los comodines de la busqueda', async () => {
+      query.mockResolvedValueOnce([{ total: 0 }]).mockResolvedValueOnce([]);
+
+      const result = await repository.list(
+        {
+          marketplace: 'fravega',
+          persistence_status: 'FAILED',
+          from: '2026-10-01T00:00:00Z',
+          to: '2026-10-31T23:59:59Z',
+          search: '50%_off'
+        },
+        { limit: 50, offset: 0 }
+      );
+
+      const [sql, params] = query.mock.calls[1];
+      expect(sql).toContain(
+        'WHERE marketplace = ? AND persistence_status = ? AND purchase_date >= ? AND purchase_date <= ? AND (unique_key LIKE ?'
+      );
+      expect(params.slice(0, 5)).toEqual([
+        'fravega',
+        'FAILED',
+        '2026-10-01 00:00:00',
+        '2026-10-31 23:59:59',
+        '%50\\%\\_off%'
+      ]);
+      expect(params).toHaveLength(4 + 7 + 2);
+      expect(result).toMatchObject({ total: 0, count: 0, hasNext: false, nextOffset: null });
+    });
+  });
+
   describe('updateStatus', () => {
     it('actualiza solo los campos enviados, incluidos los nuevos', async () => {
       query.mockResolvedValueOnce({ affectedRows: 1 });

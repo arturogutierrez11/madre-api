@@ -1,6 +1,7 @@
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateOrdersBatchDTO } from 'src/app/controller/madre/orders/dto/CreateOrdersBatch.dto';
 import { UpdateOrderStatusDTO } from 'src/app/controller/madre/orders/dto/UpdateOrderStatus.dto';
+import { ListOrdersDTO } from 'src/app/controller/madre/orders/dto/ListOrders.dto';
 import {
   FindPendingFilters,
   ISQLOrdersRepository
@@ -40,6 +41,17 @@ export class OrdersService {
       exists: order !== null,
       order
     };
+  }
+
+  async list(query: ListOrdersDTO) {
+    const { limit, offset, ...filters } = query;
+
+    try {
+      return await this.repository.list(filters, { limit: limit ?? 50, offset: offset ?? 0 });
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Error listing orders');
+    }
   }
 
   async findPending(limit?: number, filters: FindPendingFilters = {}) {

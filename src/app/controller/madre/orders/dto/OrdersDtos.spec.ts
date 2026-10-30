@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreateOrdersBatchDTO } from './CreateOrdersBatch.dto';
+import { ListOrdersDTO } from './ListOrders.dto';
 import { UpdateOrderStatusDTO } from './UpdateOrderStatus.dto';
 
 const validationErrors = async (cls: new () => object, plain: object) => {
@@ -60,5 +61,24 @@ describe('Orders DTOs', () => {
     const errors = await validationErrors(UpdateOrderStatusDTO, { estimated_delivery_date: 'manana' });
 
     expect(errors.map(error => error.property)).toEqual(['estimated_delivery_date']);
+  });
+
+  it('listado convierte limit/offset de la query y acepta los filtros', async () => {
+    const query = plainToInstance(ListOrdersDTO, {
+      marketplace: 'fravega',
+      persistence_status: 'CANCELLED',
+      from: '2026-10-01T00:00:00Z',
+      limit: '20',
+      offset: '40'
+    });
+
+    expect(await validate(query)).toHaveLength(0);
+    expect(query).toMatchObject({ limit: 20, offset: 40 });
+  });
+
+  it('listado rechaza limit mayor a 200 y fechas invalidas', async () => {
+    const errors = await validationErrors(ListOrdersDTO, { limit: '500', to: 'ayer' });
+
+    expect(errors.map(error => error.property).sort()).toEqual(['limit', 'to']);
   });
 });

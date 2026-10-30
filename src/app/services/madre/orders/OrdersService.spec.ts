@@ -1,16 +1,19 @@
 import { ISQLOrdersRepository } from 'src/core/adapters/repositories/madre/orders/ISQLOrdersRepository';
 import { OrdersService } from './OrdersService';
 
-describe('OrdersService.findPending', () => {
+describe('OrdersService', () => {
   let findPending: jest.Mock<Promise<any[]>, Parameters<ISQLOrdersRepository['findPending']>>;
+  let list: jest.Mock<Promise<any>, Parameters<ISQLOrdersRepository['list']>>;
   let service: OrdersService;
 
   beforeEach(() => {
     findPending = jest.fn<Promise<any[]>, Parameters<ISQLOrdersRepository['findPending']>>();
+    list = jest.fn<Promise<any>, Parameters<ISQLOrdersRepository['list']>>();
     const repository: ISQLOrdersRepository = {
       insertBatch: jest.fn(),
       findByUniqueKey: jest.fn(),
       findPending,
+      list,
       updateStatus: jest.fn()
     };
     service = new OrdersService(repository);
@@ -33,5 +36,16 @@ describe('OrdersService.findPending', () => {
 
     expect(findPending).toHaveBeenCalledWith(50, {});
     expect(result).toMatchObject({ limit: 50, count: 1, nextAfterId: null });
+  });
+
+  it('list usa limit 50 y offset 0 por defecto y pasa el resto como filtros', async () => {
+    list.mockResolvedValueOnce({ items: [] });
+
+    await service.list({ marketplace: 'fravega', persistence_status: 'FAILED' });
+
+    expect(list).toHaveBeenCalledWith(
+      { marketplace: 'fravega', persistence_status: 'FAILED' },
+      { limit: 50, offset: 0 }
+    );
   });
 });
